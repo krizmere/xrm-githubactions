@@ -39,18 +39,18 @@ jobs:
     - name: who-am-i action
       uses: microsoft/powerplatform-actions/who-am-i@v0
       with:
-        environment-url: ${{env.ENVIRONMENT_URL}}
-        app-id: ${{env.CLIENT_ID}}
-        client-secret: ${{ secrets.SOURCESERVICEPRINCIPALSECRET }}
-        tenant-id: ${{env.TENANT_ID}}
+        environment-url: ${{ vars.SOURCEENVIRONMENTURL }}
+        app-id: ${{ secrets.SOURCEPRINCIPALAPPID }}
+        client-secret: ${{ secrets.SOURCEPRINCIPALSECRET }}
+        tenant-id: ${{ vars.AZURETENANTID }}
 
     - name: export-solution action
       uses: microsoft/powerplatform-actions/export-solution@v0
       with:
-        environment-url: ${{env.ENVIRONMENT_URL}}
-        app-id: ${{env.CLIENT_ID}}
-        client-secret: ${{ secrets.SOURCESERVICEPRINCIPALSECRET }}
-        tenant-id: ${{env.TENANT_ID}}
+        environment-url: ${{ vars.SOURCEENVIRONMENTURL }}
+        app-id: ${{ secrets.SOURCEPRINCIPALAPPID }}
+        client-secret: ${{ secrets.SOURCEPRINCIPALSECRET }}
+        tenant-id: ${{ vars.AZURETENANTID }}
         solution-name: ${{ github.event.inputs.solution_name }}
         solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}.zip
 
