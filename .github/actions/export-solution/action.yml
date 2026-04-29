@@ -1,5 +1,5 @@
 name: Export and Unpack Power Platform Solution
-description: Exports a managed solution from Power Platform and unpacks it to source control
+description: Exports a managed solution from Power Platform, bumps version, repacks, and publishes as artifact
 
 inputs:
   solution_unique_name:
@@ -17,6 +17,19 @@ inputs:
   tenant_id:
     description: Azure AD tenant ID for authentication
     required: true
+  version_bump:
+    description: 'Version bump type: none, patch, minor, major, or custom'
+    required: false
+    default: none
+  custom_version:
+    description: 'Explicit version to set e.g. 2.0.0.0 — only used when version_bump is custom'
+    required: false
+    default: ''
+
+outputs:
+  solution_version:
+    description: The final solution version after any bump
+    value: ${{ steps.version.outputs.solution_version }}
 
 runs:
   using: composite
@@ -37,7 +50,7 @@ runs:
         mkdir -p "solutions/${{ inputs.solution_unique_name }}"
         pac solution export \
           --name "${{ inputs.solution_unique_name }}" \
-          --path "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_managed.zip" \
+          --path "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_export.zip" \
           --managed true \
           --overwrite true
 
@@ -45,8 +58,60 @@ runs:
       shell: bash
       run: |
         pac solution unpack \
-          --zipfile "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_managed.zip" \
+          --zipfile "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_export.zip" \
           --folder "solutions/${{ inputs.solution_unique_name }}/src" \
           --packagetype Managed \
           --allowWrite true \
           --allowDelete true
+
+    - name: Compute and apply version bump
+      id: version
+      shell: bash
+      run: |
+        SOLUTION_XML="solutions/${{ inputs.solution_unique_name }}/src/Other/Solution.xml"
+        CURRENT_VERSION=$(grep -oP '(?<=<Version>)[^<]+' "$SOLUTION_XML" 2>/dev/null || echo "1.0.0.0")
+
+        IFS='.' read -ra V <<< "$CURRENT_VERSION"
+        MAJOR=${V[0]:-1}; MINOR=${V[1]:-0}; BUILD=${V[2]:-0}; REVISION=${V[3]:-0}
+
+        case "${{ inputs.version_bump }}" in
+          major)  MAJOR=$((MAJOR+1)); MINOR=0; BUILD=0; REVISION=0 ;;
+          minor)  MINOR=$((MINOR+1)); BUILD=0; REVISION=0 ;;
+          patch)  BUILD=$((BUILD+1)); REVISION=0 ;;
+          custom) NEW_VERSION="${{ inputs.custom_version }}" ;;
+          *)      NEW_VERSION="$CURRENT_VERSION" ;;
+        esac
+
+        if [ "${{ inputs.version_bump }}" != "custom" ]; then
+          NEW_VERSION="${MAJOR}.${MINOR}.${BUILD}.${REVISION}"
+        fi
+
+        echo "Current version : $CURRENT_VERSION"
+        echo "New version     : $NEW_VERSION"
+
+        if [ "$NEW_VERSION" != "$CURRENT_VERSION" ]; then
+          sed -i "s|<Version>${CURRENT_VERSION}</Version>|<Version>${NEW_VERSION}</Version>|" "$SOLUTION_XML"
+          echo "Updated Solution.xml to $NEW_VERSION"
+        fi
+
+        echo "solution_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Repack solution with updated version
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.solution_version }}"
+        pac solution pack \
+          --zipfile "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_managed_${VERSION}.zip" \
+          --folder "solutions/${{ inputs.solution_unique_name }}/src" \
+          --packagetype Managed
+
+    - name: Remove raw export zip
+      shell: bash
+      run: rm "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_export.zip"
+
+    - name: Publish solution zip as workflow artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.solution_unique_name }}_managed_${{ steps.version.outputs.solution_version }}
+        path: solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_managed_${{ steps.version.outputs.solution_version }}.zip
+        retention-days: 90

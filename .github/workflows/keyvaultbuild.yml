@@ -15,6 +15,20 @@ on:
         description: 'Export LADMS Apps'
         type: boolean
         default: false
+      version_bump:
+        description: 'Version bump for all selected solutions (none = export and commit source only, no release created)'
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+          - custom
+        default: none
+      custom_version:
+        description: 'Custom version e.g. 2.0.0.0 — only used when version bump is set to custom'
+        type: string
+        required: false
 
 permissions:
   id-token: write
@@ -63,7 +77,8 @@ jobs:
           dotnet tool install --global Microsoft.PowerApps.CLI.Tool
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Export and unpack Solution A
+      - name: Export and unpack MoJ Shared Base
+        id: export-a
         if: ${{ inputs.export_solution_a }}
         uses: ./.github/actions/export-solution
         with:
@@ -72,8 +87,11 @@ jobs:
           client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          version_bump: ${{ inputs.version_bump }}
+          custom_version: ${{ inputs.custom_version }}
 
-      - name: Export and unpack Solution B
+      - name: Export and unpack MoJ Shared Automation
+        id: export-b
         if: ${{ inputs.export_solution_b }}
         uses: ./.github/actions/export-solution
         with:
@@ -82,8 +100,11 @@ jobs:
           client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          version_bump: ${{ inputs.version_bump }}
+          custom_version: ${{ inputs.custom_version }}
 
-      - name: Export and unpack Solution C
+      - name: Export and unpack LADMS Apps
+        id: export-c
         if: ${{ inputs.export_solution_c }}
         uses: ./.github/actions/export-solution
         with:
@@ -92,6 +113,8 @@ jobs:
           client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          version_bump: ${{ inputs.version_bump }}
+          custom_version: ${{ inputs.custom_version }}
 
       - name: Commit and push solution changes
         run: |
@@ -104,3 +127,45 @@ jobs:
             git commit -m "chore: export Power Platform solutions [skip ci]"
             git push
           fi
+
+      - name: Tag and release MoJ Shared Base
+        if: ${{ inputs.export_solution_a && inputs.version_bump != 'none' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.export-a.outputs.solution_version }}"
+          TAG="${{ vars.SOLUTION_A_UNIQUE_NAME }}/v${VERSION}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" \
+            --title "${{ vars.SOLUTION_A_UNIQUE_NAME }} v${VERSION}" \
+            --notes "Automated export from Power Platform DEV environment." \
+            "solutions/${{ vars.SOLUTION_A_UNIQUE_NAME }}/${{ vars.SOLUTION_A_UNIQUE_NAME }}_managed_${VERSION}.zip"
+
+      - name: Tag and release MoJ Shared Automation
+        if: ${{ inputs.export_solution_b && inputs.version_bump != 'none' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.export-b.outputs.solution_version }}"
+          TAG="${{ vars.SOLUTION_B_UNIQUE_NAME }}/v${VERSION}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" \
+            --title "${{ vars.SOLUTION_B_UNIQUE_NAME }} v${VERSION}" \
+            --notes "Automated export from Power Platform DEV environment." \
+            "solutions/${{ vars.SOLUTION_B_UNIQUE_NAME }}/${{ vars.SOLUTION_B_UNIQUE_NAME }}_managed_${VERSION}.zip"
+
+      - name: Tag and release LADMS Apps
+        if: ${{ inputs.export_solution_c && inputs.version_bump != 'none' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.export-c.outputs.solution_version }}"
+          TAG="${{ vars.SOLUTION_C_UNIQUE_NAME }}/v${VERSION}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" \
+            --title "${{ vars.SOLUTION_C_UNIQUE_NAME }} v${VERSION}" \
+            --notes "Automated export from Power Platform DEV environment." \
+            "solutions/${{ vars.SOLUTION_C_UNIQUE_NAME }}/${{ vars.SOLUTION_C_UNIQUE_NAME }}_managed_${VERSION}.zip"
