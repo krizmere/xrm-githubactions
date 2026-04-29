@@ -10,11 +10,11 @@ on:
       export_solution_b:
         description: 'Export MoJ Shared Automation'
         type: boolean
-        default: false
+        default: true
       export_solution_c:
         description: 'Export LADMS Apps'
         type: boolean
-        default: false
+        default: true
       version_bump:
         description: 'Version bump for all selected solutions (none = export and commit source only, no release created)'
         type: choice
@@ -120,9 +120,6 @@ jobs:
             git push
           fi
 
-      # GitHub Actions does not support looping over `uses:` steps — each composite
-      # action call above must be a separate named step with its own id to capture
-      # outputs. The tag/release logic below is pure bash and can be looped.
       - name: Tag and release selected solutions
         if: ${{ inputs.version_bump != 'none (export only)' }}
         env:
