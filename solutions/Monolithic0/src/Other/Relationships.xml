@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<EntityRelationships xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <EntityRelationship Name="business_unit_kc_bankaccount" />
+  <EntityRelationship Name="business_unit_kc_customer" />
+  <EntityRelationship Name="business_unit_kc_transaction" />
+  <EntityRelationship Name="kc_BankAccount_kc_Customer" />
+  <EntityRelationship Name="kc_Transaction_kc_BankAccount" />
+  <EntityRelationship Name="lk_kc_bankaccount_createdby" />
+  <EntityRelationship Name="lk_kc_bankaccount_modifiedby" />
+  <EntityRelationship Name="lk_kc_customer_createdby" />
+  <EntityRelationship Name="lk_kc_customer_modifiedby" />
+  <EntityRelationship Name="lk_kc_transaction_createdby" />
+  <EntityRelationship Name="lk_kc_transaction_modifiedby" />
+  <EntityRelationship Name="owner_kc_bankaccount" />
+  <EntityRelationship Name="owner_kc_customer" />
+  <EntityRelationship Name="owner_kc_transaction" />
+  <EntityRelationship Name="team_kc_bankaccount" />
+  <EntityRelationship Name="team_kc_customer" />
+  <EntityRelationship Name="team_kc_transaction" />
+  <EntityRelationship Name="TransactionCurrency_kc_Transaction" />
+  <EntityRelationship Name="user_kc_bankaccount" />
+  <EntityRelationship Name="user_kc_customer" />
+  <EntityRelationship Name="user_kc_transaction" />
+</EntityRelationships>
