@@ -25,14 +25,19 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            SECRET_VALUE=$(az keyvault secret show --name "githubactions-build-secret" --vault-name ${{ secrets.KEYVAULT_NAME }} --query value -o tsv)
-            echo "::add-mask::$SECRET_VALUE"
-            echo "SECRET_VALUE=$SECRET_VALUE" >> $GITHUB_ENV
+            IFS=',' read -ra SECRET_NAMES <<< "${{ vars.KEYVAULT_SECRET_NAMES }}"
+            for SECRET_NAME in "${SECRET_NAMES[@]}"; do
+              SECRET_VALUE=$(az keyvault secret show --name "$SECRET_NAME" --vault-name ${{ secrets.AZURE_KEYVAULT_NAME }} --query value -o tsv)
+              echo "::add-mask::$SECRET_VALUE"
+              ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+              echo "${ENV_VAR}=${SECRET_VALUE}" >> $GITHUB_ENV
+            done
+            
       - name: Use retrieved secret
-        run: echo "The secret is successfully retrieved!"
-
-      - name: Use SECRET_VALUE in deployment
         run: |
-          ./deploy.sh
-        env:
-          SECRET_VALUE: ${{ env.SECRET_VALUE }}
+          IFS=',' read -ra SECRET_NAMES <<< "${{ vars.KEYVAULT_SECRET_NAMES }}"
+          COUNT=${#SECRET_NAMES[@]}
+          echo "Successfully retrieved ${COUNT} secret(s) from Key Vault:"
+          for SECRET_NAME in "${SECRET_NAMES[@]}"; do
+            echo "  - ${SECRET_NAME}"
+          done
