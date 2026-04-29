@@ -1,0 +1,51 @@
+name: Export and Unpack Power Platform Solution
+description: Exports a managed solution from Power Platform and unpacks it to source control
+
+inputs:
+  solution_unique_name:
+    description: The unique name of the solution to export
+    required: true
+  environment_url:
+    description: The URL of the Power Platform environment
+    required: true
+  client_id:
+    description: Application (client) ID for authentication
+    required: true
+  client_secret:
+    description: Client secret for authentication
+    required: true
+  tenant_id:
+    description: Azure AD tenant ID for authentication
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Authenticate with Power Platform
+      shell: bash
+      run: |
+        pac auth create \
+          --url "${{ inputs.environment_url }}" \
+          --applicationId "${{ inputs.client_id }}" \
+          --clientSecret "${{ inputs.client_secret }}" \
+          --tenant "${{ inputs.tenant_id }}"
+
+    - name: Export managed solution
+      shell: bash
+      run: |
+        mkdir -p "solutions/${{ inputs.solution_unique_name }}"
+        pac solution export \
+          --name "${{ inputs.solution_unique_name }}" \
+          --path "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_managed.zip" \
+          --managed true \
+          --overwrite true
+
+    - name: Unpack solution to source
+      shell: bash
+      run: |
+        pac solution unpack \
+          --zipfile "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_managed.zip" \
+          --folder "solutions/${{ inputs.solution_unique_name }}/src" \
+          --packagetype Managed \
+          --allowWrite true \
+          --allowDelete true

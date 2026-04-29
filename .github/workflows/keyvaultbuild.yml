@@ -1,12 +1,27 @@
 name: PowerPlatformExportAndCommit
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
+    inputs:
+      export_solution_a:
+        description: 'Export MoJ Shared Base'
+        type: boolean
+        default: true
+      export_solution_b:
+        description: 'Export MoJ Shared Automation'
+        type: boolean
+        default: false
+      export_solution_c:
+        description: 'Export LADMS Apps'
+        type: boolean
+        default: false
+
 permissions:
   id-token: write
-  contents: read
+  contents: write
+
 jobs:
-  kv-get-secrets:
+  auth-export-unpack-commit:
     runs-on: ubuntu-latest
     environment: developer-dev
     steps:
@@ -20,7 +35,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Retrieve secret from Key Vault
+      - name: Retrieve secrets from Key Vault
         id: keyvault
         uses: azure/CLI@v1
         with:
@@ -32,12 +47,60 @@ jobs:
               ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
               echo "${ENV_VAR}=${SECRET_VALUE}" >> $GITHUB_ENV
             done
-            
+
       - name: Confirm retrieved secrets
         run: |
           IFS=',' read -ra SECRET_NAMES <<< "${{ vars.KEYVAULT_SECRET_NAMES }}"
           COUNT=${#SECRET_NAMES[@]}
-          echo "Successfully retrieved ${COUNT} secret(s) from Key Vault:"
+          echo "Successfully retrieved ${COUNT} secret(s) from Key Vault and transformed for use as environment variables:"
           for SECRET_NAME in "${SECRET_NAMES[@]}"; do
-            echo "  - ${SECRET_NAME}"
+            ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+            echo "  - ${SECRET_NAME} -> env.${ENV_VAR}"
           done
+
+      - name: Install Power Platform CLI
+        run: |
+          dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Export and unpack MoJ Shared Base Solution
+        if: ${{ inputs.export_solution_a }}
+        uses: ./.github/actions/export-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_A_UNIQUE_NAME }}
+          environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
+          client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
+          client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
+          tenant_id: ${{ env.AZURE_TENANT_ID }}
+
+      - name: Export and unpack MoJ Shared Automation Solution
+        if: ${{ inputs.export_solution_b }}
+        uses: ./.github/actions/export-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_B_UNIQUE_NAME }}
+          environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
+          client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
+          client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
+          tenant_id: ${{ env.AZURE_TENANT_ID }}
+
+      - name: Export and unpack LADMS Apps Solution
+        if: ${{ inputs.export_solution_c }}
+        uses: ./.github/actions/export-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_C_UNIQUE_NAME }}
+          environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
+          client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
+          client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
+          tenant_id: ${{ env.AZURE_TENANT_ID }}
+
+      - name: Commit and push solution changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit — solutions are already up to date"
+          else
+            git commit -m "chore: export Power Platform solutions [skip ci]"
+            git push
+          fi
