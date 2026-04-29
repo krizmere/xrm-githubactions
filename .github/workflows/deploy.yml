@@ -1,0 +1,148 @@
+name: PowerPlatformDeploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_solution_a:
+        description: 'Deploy MoJ Shared Base (latest release)'
+        type: boolean
+        default: true
+      deploy_solution_b:
+        description: 'Deploy MoJ Shared Automation (latest release)'
+        type: boolean
+        default: false
+      deploy_solution_c:
+        description: 'Deploy LADMS Apps (latest release)'
+        type: boolean
+        default: false
+      deploy_test:
+        description: 'Deploy to TEST'
+        type: boolean
+        default: true
+      # Add further environment inputs here as they are configured in GitHub Settings > Environments
+      # deploy_uat:
+      #   description: 'Deploy to UAT'
+      #   type: boolean
+      #   default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate at least one solution and environment are selected
+        run: |
+          if [[ "${{ inputs.deploy_solution_a }}" == "false" &&
+                "${{ inputs.deploy_solution_b }}" == "false" &&
+                "${{ inputs.deploy_solution_c }}" == "false" ]]; then
+            echo "Error: at least one solution must be selected"
+            exit 1
+          fi
+          if [[ "${{ inputs.deploy_test }}" == "false" ]]; then
+            echo "Error: at least one environment must be selected"
+            exit 1
+          fi
+
+  # -----------------------------------------------------------------------
+  # TEST — no approval gate required
+  # Configure in: GitHub Settings > Environments > test
+  # -----------------------------------------------------------------------
+  deploy-test:
+    needs: validate-inputs
+    if: ${{ inputs.deploy_test }}
+    runs-on: ubuntu-latest
+    environment: developer-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_GITHUB_KEYVAULT_CLIENTID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Retrieve secrets from Key Vault
+        uses: azure/CLI@v3
+        with:
+          inlineScript: |
+            IFS=',' read -ra SECRET_NAMES <<< "${{ vars.KEYVAULT_SECRET_NAMES }}"
+            for SECRET_NAME in "${SECRET_NAMES[@]}"; do
+              SECRET_VALUE=$(az keyvault secret show --name "$SECRET_NAME" --vault-name ${{ secrets.AZURE_KEYVAULT_NAME }} --query value -o tsv)
+              echo "::add-mask::$SECRET_VALUE"
+              ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+              echo "${ENV_VAR}=${SECRET_VALUE}" >> $GITHUB_ENV
+            done
+
+      - name: Confirm retrieved secrets
+        run: |
+          IFS=',' read -ra SECRET_NAMES <<< "${{ vars.KEYVAULT_SECRET_NAMES }}"
+          COUNT=${#SECRET_NAMES[@]}
+          echo "Successfully retrieved ${COUNT} secret(s) from Key Vault and transformed for use as environment variables:"
+          for SECRET_NAME in "${SECRET_NAMES[@]}"; do
+            ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+            echo "  - ${SECRET_NAME} -> env.${ENV_VAR}"
+          done
+
+      - name: Install Power Platform CLI
+        run: |
+          dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Deploy MoJ Shared Base
+        if: ${{ inputs.deploy_solution_a }}
+        uses: ./.github/actions/deploy-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_A_UNIQUE_NAME }}
+          environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
+          client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
+          client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          gh_token: ${{ github.token }}
+
+      - name: Deploy MoJ Shared Automation
+        if: ${{ inputs.deploy_solution_b }}
+        uses: ./.github/actions/deploy-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_B_UNIQUE_NAME }}
+          environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
+          client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
+          client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          gh_token: ${{ github.token }}
+
+      - name: Deploy LADMS Apps
+        if: ${{ inputs.deploy_solution_c }}
+        uses: ./.github/actions/deploy-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_C_UNIQUE_NAME }}
+          environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
+          client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
+          client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          gh_token: ${{ github.token }}
+
+  # -----------------------------------------------------------------------
+  # UAT — configure required reviewers in GitHub Settings > Environments > uat
+  # Uncomment when the uat environment and its Key Vault secrets are ready
+  # -----------------------------------------------------------------------
+  # deploy-uat:
+  #   needs: deploy-test
+  #   if: |
+  #     always() &&
+  #     inputs.deploy_uat &&
+  #     (needs.deploy-test.result == 'success' || needs.deploy-test.result == 'skipped')
+  #   runs-on: ubuntu-latest
+  #   environment: uat
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - uses: azure/login@v3
+  #       with:
+  #         client-id: ${{ secrets.AZURE_GITHUB_KEYVAULT_CLIENTID }}
+  #         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+  #         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  #     # ... same pattern as deploy-test, secrets resolve to UAT values via UAT Key Vault

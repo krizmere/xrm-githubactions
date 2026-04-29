@@ -1,0 +1,73 @@
+name: Deploy Power Platform Solution
+description: Resolves the latest release for a solution, downloads the artifact, and imports it into a Power Platform environment
+
+inputs:
+  solution_unique_name:
+    description: The unique name of the solution to deploy
+    required: true
+  environment_url:
+    description: The URL of the target Power Platform environment
+    required: true
+  client_id:
+    description: Application (client) ID for authentication
+    required: true
+  client_secret:
+    description: Client secret for authentication
+    required: true
+  tenant_id:
+    description: Azure AD tenant ID for authentication
+    required: true
+  gh_token:
+    description: GitHub token for reading releases and downloading artifacts
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve latest release version
+      id: resolve
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+      run: |
+        LATEST_TAG=$(gh release list --limit 100 --json tagName,createdAt \
+          | jq -r --arg prefix "${{ inputs.solution_unique_name }}/" \
+            '[.[] | select(.tagName | startswith($prefix))] | sort_by(.createdAt) | last | .tagName')
+
+        if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
+          echo "Error: no release found for solution ${{ inputs.solution_unique_name }}"
+          exit 1
+        fi
+
+        VERSION="${LATEST_TAG#*/v}"
+        echo "Resolved latest release: $LATEST_TAG (version $VERSION)"
+        echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Download solution artifact from GitHub Releases
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+      run: |
+        mkdir -p deploy
+        gh release download "${{ steps.resolve.outputs.tag }}" \
+          --pattern "${{ inputs.solution_unique_name }}_managed_${{ steps.resolve.outputs.version }}.zip" \
+          --dir deploy
+
+    - name: Authenticate with Power Platform
+      shell: bash
+      run: |
+        pac auth create \
+          --environment "${{ inputs.environment_url }}" \
+          --applicationId "${{ inputs.client_id }}" \
+          --clientSecret "${{ inputs.client_secret }}" \
+          --tenant "${{ inputs.tenant_id }}" \
+          --accept-cleartext-caching
+
+    - name: Import solution
+      shell: bash
+      run: |
+        pac solution import \
+          --path "deploy/${{ inputs.solution_unique_name }}_managed_${{ steps.resolve.outputs.version }}.zip" \
+          --activate-plugins true \
+          --force-overwrite true
