@@ -63,7 +63,7 @@ jobs:
           dotnet tool install --global Microsoft.PowerApps.CLI.Tool
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Export and unpack MoJ Shared Base Solution
+      - name: Export and unpack Solution A
         if: ${{ inputs.export_solution_a }}
         uses: ./.github/actions/export-solution
         with:
@@ -71,9 +71,9 @@ jobs:
           environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
           client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
-          tenant_id: ${{ env.AZURE_TENANT_ID }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: Export and unpack MoJ Shared Automation Solution
+      - name: Export and unpack Solution B
         if: ${{ inputs.export_solution_b }}
         uses: ./.github/actions/export-solution
         with:
@@ -81,9 +81,9 @@ jobs:
           environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
           client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
-          tenant_id: ${{ env.AZURE_TENANT_ID }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: Export and unpack LADMS Apps Solution
+      - name: Export and unpack Solution C
         if: ${{ inputs.export_solution_c }}
         uses: ./.github/actions/export-solution
         with:
@@ -91,7 +91,7 @@ jobs:
           environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
           client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
-          tenant_id: ${{ env.AZURE_TENANT_ID }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
 
       - name: Commit and push solution changes
         run: |
