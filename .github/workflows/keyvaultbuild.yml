@@ -45,7 +45,7 @@ jobs:
       - name: Log in to Azure using the service principal credentials stored in GitHub Secrets
         uses: azure/login@v3
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-id: ${{ secrets.AZURE_GITHUB_KEYVAULT_CLIENTID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
@@ -128,44 +128,26 @@ jobs:
             git push
           fi
 
-      - name: Tag and release MoJ Shared Base
-        if: ${{ inputs.export_solution_a && inputs.version_bump != 'none (export only)' }}
+      # GitHub Actions does not support looping over `uses:` steps — each composite
+      # action call above must be a separate named step with its own id to capture
+      # outputs. The tag/release logic below is pure bash and can be looped.
+      - name: Tag and release selected solutions
+        if: ${{ inputs.version_bump != 'none (export only)' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="${{ steps.export-a.outputs.solution_version }}"
-          TAG="${{ vars.SOLUTION_A_UNIQUE_NAME }}/v${VERSION}"
-          git tag "$TAG"
-          git push origin "$TAG"
-          gh release create "$TAG" \
-            --title "${{ vars.SOLUTION_A_UNIQUE_NAME }} v${VERSION}" \
-            --notes "Automated export from Power Platform DEV environment." \
-            "solutions/${{ vars.SOLUTION_A_UNIQUE_NAME }}/${{ vars.SOLUTION_A_UNIQUE_NAME }}_managed_${VERSION}.zip"
+          declare -A SOLUTIONS
+          [[ "${{ inputs.export_solution_a }}" == "true" ]] && SOLUTIONS["${{ vars.SOLUTION_A_UNIQUE_NAME }}"]="${{ steps.export-a.outputs.solution_version }}"
+          [[ "${{ inputs.export_solution_b }}" == "true" ]] && SOLUTIONS["${{ vars.SOLUTION_B_UNIQUE_NAME }}"]="${{ steps.export-b.outputs.solution_version }}"
+          [[ "${{ inputs.export_solution_c }}" == "true" ]] && SOLUTIONS["${{ vars.SOLUTION_C_UNIQUE_NAME }}"]="${{ steps.export-c.outputs.solution_version }}"
 
-      - name: Tag and release MoJ Shared Automation
-        if: ${{ inputs.export_solution_b && inputs.version_bump != 'none (export only)' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VERSION="${{ steps.export-b.outputs.solution_version }}"
-          TAG="${{ vars.SOLUTION_B_UNIQUE_NAME }}/v${VERSION}"
-          git tag "$TAG"
-          git push origin "$TAG"
-          gh release create "$TAG" \
-            --title "${{ vars.SOLUTION_B_UNIQUE_NAME }} v${VERSION}" \
-            --notes "Automated export from Power Platform DEV environment." \
-            "solutions/${{ vars.SOLUTION_B_UNIQUE_NAME }}/${{ vars.SOLUTION_B_UNIQUE_NAME }}_managed_${VERSION}.zip"
-
-      - name: Tag and release LADMS Apps
-        if: ${{ inputs.export_solution_c && inputs.version_bump != 'none (export only)' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VERSION="${{ steps.export-c.outputs.solution_version }}"
-          TAG="${{ vars.SOLUTION_C_UNIQUE_NAME }}/v${VERSION}"
-          git tag "$TAG"
-          git push origin "$TAG"
-          gh release create "$TAG" \
-            --title "${{ vars.SOLUTION_C_UNIQUE_NAME }} v${VERSION}" \
-            --notes "Automated export from Power Platform DEV environment." \
-            "solutions/${{ vars.SOLUTION_C_UNIQUE_NAME }}/${{ vars.SOLUTION_C_UNIQUE_NAME }}_managed_${VERSION}.zip"
+          for SOLUTION_NAME in "${!SOLUTIONS[@]}"; do
+            VERSION="${SOLUTIONS[$SOLUTION_NAME]}"
+            TAG="${SOLUTION_NAME}/v${VERSION}"
+            git tag "$TAG"
+            git push origin "$TAG"
+            gh release create "$TAG" \
+              --title "${SOLUTION_NAME} v${VERSION}" \
+              --notes "Automated export from Power Platform DEV environment." \
+              "solutions/${SOLUTION_NAME}/${SOLUTION_NAME}_managed_${VERSION}.zip"
+          done
