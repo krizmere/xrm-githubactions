@@ -23,12 +23,7 @@ on:
           - patch
           - minor
           - major
-          - custom
         default: none (export only)
-      custom_version:
-        description: 'Custom version e.g. 2.0.0.0 — only used when version bump is set to custom'
-        type: string
-        required: false
 
 permissions:
   id-token: write
@@ -88,7 +83,6 @@ jobs:
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           version_bump: ${{ inputs.version_bump }}
-          custom_version: ${{ inputs.custom_version }}
 
       - name: Export and unpack MoJ Shared Automation
         id: export-b
@@ -101,7 +95,6 @@ jobs:
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           version_bump: ${{ inputs.version_bump }}
-          custom_version: ${{ inputs.custom_version }}
 
       - name: Export and unpack LADMS Apps
         id: export-c
@@ -114,7 +107,6 @@ jobs:
           client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           version_bump: ${{ inputs.version_bump }}
-          custom_version: ${{ inputs.custom_version }}
 
       - name: Commit and push solution changes
         run: |
