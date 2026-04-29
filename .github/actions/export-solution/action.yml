@@ -25,10 +25,11 @@ runs:
       shell: bash
       run: |
         pac auth create \
-          --url "${{ inputs.environment_url }}" \
+          --environment "${{ inputs.environment_url }}" \
           --applicationId "${{ inputs.client_id }}" \
           --clientSecret "${{ inputs.client_secret }}" \
-          --tenant "${{ inputs.tenant_id }}"
+          --tenant "${{ inputs.tenant_id }}" \
+          --accept-cleartext-caching
 
     - name: Export managed solution
       shell: bash
