@@ -19,12 +19,12 @@ on:
         description: 'Version bump for all selected solutions (none = export and commit source only, no release created)'
         type: choice
         options:
-          - none
+          - none (export only)
           - patch
           - minor
           - major
           - custom
-        default: none
+        default: none (export only)
       custom_version:
         description: 'Custom version e.g. 2.0.0.0 — only used when version bump is set to custom'
         type: string
@@ -129,7 +129,7 @@ jobs:
           fi
 
       - name: Tag and release MoJ Shared Base
-        if: ${{ inputs.export_solution_a && inputs.version_bump != 'none' }}
+        if: ${{ inputs.export_solution_a && inputs.version_bump != 'none (export only)' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -143,7 +143,7 @@ jobs:
             "solutions/${{ vars.SOLUTION_A_UNIQUE_NAME }}/${{ vars.SOLUTION_A_UNIQUE_NAME }}_managed_${VERSION}.zip"
 
       - name: Tag and release MoJ Shared Automation
-        if: ${{ inputs.export_solution_b && inputs.version_bump != 'none' }}
+        if: ${{ inputs.export_solution_b && inputs.version_bump != 'none (export only)' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -157,7 +157,7 @@ jobs:
             "solutions/${{ vars.SOLUTION_B_UNIQUE_NAME }}/${{ vars.SOLUTION_B_UNIQUE_NAME }}_managed_${VERSION}.zip"
 
       - name: Tag and release LADMS Apps
-        if: ${{ inputs.export_solution_c && inputs.version_bump != 'none' }}
+        if: ${{ inputs.export_solution_c && inputs.version_bump != 'none (export only)' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
