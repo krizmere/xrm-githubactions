@@ -1,5 +1,6 @@
 # Editor
 .vscode/
+.claude/
 
 # Power Platform solution zip exports (unpacked source is committed, not the zips)
 solutions/**/*.zip
