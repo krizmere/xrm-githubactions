@@ -45,27 +45,10 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Retrieve secrets from Key Vault
-        id: keyvault
-        uses: azure/CLI@v3
+        uses: ./.github/actions/retrieve-keyvault-secrets
         with:
-          inlineScript: |
-            IFS=',' read -ra SECRET_NAMES <<< "${{ vars.KEYVAULT_SECRET_NAMES }}"
-            for SECRET_NAME in "${SECRET_NAMES[@]}"; do
-              SECRET_VALUE=$(az keyvault secret show --name "$SECRET_NAME" --vault-name ${{ secrets.AZURE_KEYVAULT_NAME }} --query value -o tsv)
-              echo "::add-mask::$SECRET_VALUE"
-              ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
-              echo "${ENV_VAR}=${SECRET_VALUE}" >> $GITHUB_ENV
-            done
-
-      - name: Confirm retrieved secrets
-        run: |
-          IFS=',' read -ra SECRET_NAMES <<< "${{ vars.KEYVAULT_SECRET_NAMES }}"
-          COUNT=${#SECRET_NAMES[@]}
-          echo "Successfully retrieved ${COUNT} secret(s) from Key Vault and transformed for use as environment variables:"
-          for SECRET_NAME in "${SECRET_NAMES[@]}"; do
-            ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
-            echo "  - ${SECRET_NAME} -> env.${ENV_VAR}"
-          done
+          secret_names: ${{ vars.KEYVAULT_SECRET_NAMES }}
+          keyvault_name: ${{ secrets.AZURE_KEYVAULT_NAME }}
 
       - name: Install Power Platform CLI
         run: |

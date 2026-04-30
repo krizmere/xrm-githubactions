@@ -1,0 +1,36 @@
+name: Retrieve Key Vault Secrets
+description: Retrieves secrets from Azure Key Vault and exposes them as environment variables
+
+inputs:
+  secret_names:
+    description: Comma-separated list of Key Vault secret names to retrieve
+    required: true
+  keyvault_name:
+    description: Name of the Azure Key Vault
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Retrieve secrets from Key Vault
+      uses: azure/CLI@v3
+      with:
+        inlineScript: |
+          IFS=',' read -ra SECRET_NAMES <<< "${{ inputs.secret_names }}"
+          for SECRET_NAME in "${SECRET_NAMES[@]}"; do
+            SECRET_VALUE=$(az keyvault secret show --name "$SECRET_NAME" --vault-name "${{ inputs.keyvault_name }}" --query value -o tsv)
+            echo "::add-mask::$SECRET_VALUE"
+            ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+            echo "${ENV_VAR}=${SECRET_VALUE}" >> $GITHUB_ENV
+          done
+
+    - name: Confirm retrieved secrets
+      shell: bash
+      run: |
+        IFS=',' read -ra SECRET_NAMES <<< "${{ inputs.secret_names }}"
+        COUNT=${#SECRET_NAMES[@]}
+        echo "Successfully retrieved ${COUNT} secret(s) from Key Vault and exposed as environment variables:"
+        for SECRET_NAME in "${SECRET_NAMES[@]}"; do
+          ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+          echo "  - ${SECRET_NAME} -> env.${ENV_VAR}"
+        done
