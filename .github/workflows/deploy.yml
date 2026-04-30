@@ -14,17 +14,17 @@ on:
           - preprod
           - prod
       deploy_solution_a:
-        description: Deploy MoJ Shared Base (latest release)
+        description: Deploy MoJ Shared Base
         type: boolean
         default: true
       deploy_solution_b:
-        description: Deploy MoJ Shared Automation (latest release)
+        description: Deploy MoJ Shared Automation
         type: boolean
-        default: false
+        default: true
       deploy_solution_c:
-        description: Deploy LADMS Apps (latest release)
+        description: Deploy LADMS Apps
         type: boolean
-        default: false
+        default: true
 
 permissions:
   id-token: write
