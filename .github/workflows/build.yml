@@ -1,4 +1,4 @@
-name: PowerPlatformExportAndCommit
+name: PowerPlatformBuild
 
 on:
   workflow_dispatch:

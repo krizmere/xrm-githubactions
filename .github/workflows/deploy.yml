@@ -64,16 +64,6 @@ jobs:
           secret_names: ${{ vars.KEYVAULT_SECRET_NAMES }}
           keyvault_name: ${{ secrets.AZURE_KEYVAULT_NAME }}
 
-      - name: Map connection variables for selected environment
-        run: |
-          PREFIX=$(echo "${{ inputs.environment }}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
-          URL_VAR="${PREFIX}_ENVIRONMENT_URL"
-          ID_VAR="${PREFIX}_CLIENT_ID"
-          SECRET_VAR="${PREFIX}_CLIENT_SECRET"
-          echo "PP_ENVIRONMENT_URL=${!URL_VAR}" >> $GITHUB_ENV
-          echo "PP_CLIENT_ID=${!ID_VAR}" >> $GITHUB_ENV
-          echo "PP_CLIENT_SECRET=${!SECRET_VAR}" >> $GITHUB_ENV
-
       - name: Install Power Platform CLI
         run: |
           dotnet tool install --global Microsoft.PowerApps.CLI.Tool
@@ -84,9 +74,9 @@ jobs:
         uses: ./.github/actions/deploy-solution
         with:
           solution_unique_name: ${{ vars.SOLUTION_A_UNIQUE_NAME }}
-          environment_url: ${{ env.PP_ENVIRONMENT_URL }}
-          client_id: ${{ env.PP_CLIENT_ID }}
-          client_secret: ${{ env.PP_CLIENT_SECRET }}
+          environment_url: ${{ env.PP_ENV_URL }}
+          client_id: ${{ env.PP_APP_CLIENTID }}
+          client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
 
@@ -95,9 +85,9 @@ jobs:
         uses: ./.github/actions/deploy-solution
         with:
           solution_unique_name: ${{ vars.SOLUTION_B_UNIQUE_NAME }}
-          environment_url: ${{ env.PP_ENVIRONMENT_URL }}
-          client_id: ${{ env.PP_CLIENT_ID }}
-          client_secret: ${{ env.PP_CLIENT_SECRET }}
+          environment_url: ${{ env.PP_ENV_URL }}
+          client_id: ${{ env.PP_APP_CLIENTID }}
+          client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
 
@@ -106,8 +96,8 @@ jobs:
         uses: ./.github/actions/deploy-solution
         with:
           solution_unique_name: ${{ vars.SOLUTION_C_UNIQUE_NAME }}
-          environment_url: ${{ env.PP_ENVIRONMENT_URL }}
-          client_id: ${{ env.PP_CLIENT_ID }}
-          client_secret: ${{ env.PP_CLIENT_SECRET }}
+          environment_url: ${{ env.PP_ENV_URL }}
+          client_id: ${{ env.PP_APP_CLIENTID }}
+          client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
