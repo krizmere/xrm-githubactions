@@ -8,11 +8,11 @@ on:
         type: choice
         required: true
         options:
-          - sit
-          - uat
-          - dm
-          - preprod
-          - prod
+          - developer-test
+          - developer-uat
+          - developer-dm
+          - developer-preprod
+          - developer-prod
       deploy_solution_a:
         description: Deploy MoJ Shared Base
         type: boolean
