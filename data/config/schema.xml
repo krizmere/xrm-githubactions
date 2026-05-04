@@ -1,0 +1,12 @@
+<entities >
+  <entity name="account" displayname="Account" etc="1" primaryidfield="accountid" primarynamefield="name" disableplugins="true">
+    <fields>
+      <field displayname="Address 1: Telephone 3" name="address1_telephone3" type="string" />
+      <field displayname="Address 1: ZIP/Postal Code" name="address1_postalcode" type="string" />
+      <field displayname="Address 2: Address Type" name="address2_addresstypecode" type="optionsetvalue" />
+      <field displayname="Account Name" name="name" type="string" />
+      <field displayname="Account" name="accountid" type="guid" primaryKey="true" />
+      <field displayname="Account Number" name="accountnumber" type="string" />
+    </fields>
+  </entity>
+</entities>

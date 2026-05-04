@@ -25,6 +25,10 @@ on:
           - minor
           - major
         default: none (export only)
+      export_config_data:
+        description: Export Config Data
+        type: boolean
+        default: false
 
 permissions:
   id-token: write
@@ -124,3 +128,10 @@ jobs:
               --notes "Automated export from Power Platform DEV environment." \
               "solutions/${SOLUTION_NAME}/${SOLUTION_NAME}_managed_${VERSION}.zip"
           done
+
+      - name: Export configuration data
+        if: ${{ inputs.export_config_data }}
+        uses: ./.github/actions/export-config-data
+        with:
+          schema_file: data/config/schema.xml
+          gh_token: ${{ github.token }}

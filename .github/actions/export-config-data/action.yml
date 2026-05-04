@@ -1,0 +1,38 @@
+name: Export Configuration Migration Data
+description: Exports configuration data using a CMT schema file and publishes it as a GitHub release artifact
+
+inputs:
+  schema_file:
+    description: Path to the CMT schema XML file
+    required: true
+  gh_token:
+    description: GitHub token for creating releases and uploading artifacts
+    required: true
+
+outputs:
+  config_data_tag:
+    description: The release tag created for this config data export
+    value: ${{ steps.release.outputs.tag }}
+
+runs:
+  using: composite
+  steps:
+    - name: Export configuration data
+      shell: bash
+      run: |
+        pac data export \
+          --schemaFile "${{ inputs.schema_file }}" \
+          --dataFile config-data.zip \
+          --overwrite
+
+    - name: Publish config data as GitHub release
+      id: release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+      run: |
+        TAG="config-data/v$(date +%Y.%m.%d.%H%M%S)"
+        gh release create "$TAG" config-data.zip \
+          --title "Config Data $TAG" \
+          --notes "Automated configuration data export."
+        echo "tag=$TAG" >> $GITHUB_OUTPUT

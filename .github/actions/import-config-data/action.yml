@@ -1,0 +1,41 @@
+name: Import Configuration Migration Data
+description: Downloads the latest config data release artifact and imports it into the active Power Platform environment
+
+inputs:
+  gh_token:
+    description: GitHub token for reading releases and downloading artifacts
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve latest config data release
+      id: resolve
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+      run: |
+        LATEST_TAG=$(gh release list --limit 100 --json tagName,createdAt \
+          | jq -r '[.[] | select(.tagName | startswith("config-data/"))] | sort_by(.createdAt) | last | .tagName')
+
+        if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
+          echo "Error: no config-data release found"
+          exit 1
+        fi
+
+        echo "Resolved latest config data release: $LATEST_TAG"
+        echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+    - name: Download config data artifact
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+      run: |
+        gh release download "${{ steps.resolve.outputs.tag }}" \
+          --pattern "config-data.zip" \
+          --dir .
+
+    - name: Import configuration data
+      shell: bash
+      run: |
+        pac data import --data config-data.zip
