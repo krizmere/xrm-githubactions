@@ -13,16 +13,15 @@ runs:
   using: composite
   steps:
     - name: Retrieve secrets from Key Vault
-      uses: azure/CLI@v3
-      with:
-        inlineScript: |
-          IFS=',' read -ra SECRET_NAMES <<< "${{ inputs.secret_names }}"
-          for SECRET_NAME in "${SECRET_NAMES[@]}"; do
-            SECRET_VALUE=$(az keyvault secret show --name "$SECRET_NAME" --vault-name "${{ inputs.keyvault_name }}" --query value -o tsv)
-            echo "::add-mask::$SECRET_VALUE"
-            ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
-            echo "${ENV_VAR}=${SECRET_VALUE}" >> $GITHUB_ENV
-          done
+      shell: bash
+      run: |
+        IFS=',' read -ra SECRET_NAMES <<< "${{ inputs.secret_names }}"
+        for SECRET_NAME in "${SECRET_NAMES[@]}"; do
+          SECRET_VALUE=$(az keyvault secret show --name "$SECRET_NAME" --vault-name "${{ inputs.keyvault_name }}" --query value -o tsv)
+          echo "::add-mask::$SECRET_VALUE"
+          ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+          echo "${ENV_VAR}=${SECRET_VALUE}" >> $GITHUB_ENV
+        done
 
     - name: Confirm retrieved secrets
       shell: bash
