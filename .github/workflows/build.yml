@@ -3,6 +3,16 @@ name: PowerPlatformBuild
 on:
   workflow_dispatch:
     inputs:
+      version_bump:
+        description: 'Version bump for all selected solutions (none = export and commit source only, no release created)'
+        type: choice
+        options:
+          - none (export only)
+          - revision
+          - patch
+          - minor
+          - major
+        default: none (export only)
       export_solution_a:
         description: 'Export MoJ Shared Base'
         type: boolean
@@ -15,16 +25,6 @@ on:
         description: 'Export LADMS Apps'
         type: boolean
         default: true
-      version_bump:
-        description: 'Version bump for all selected solutions (none = export and commit source only, no release created)'
-        type: choice
-        options:
-          - none (export only)
-          - revision
-          - patch
-          - minor
-          - major
-        default: none (export only)
       export_config_data:
         description: Export Config Data
         type: boolean
@@ -36,8 +36,11 @@ permissions:
 
 jobs:
   auth-export-unpack-commit:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     environment: developer-dev
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -58,7 +61,7 @@ jobs:
       - name: Install Power Platform CLI
         run: |
           dotnet tool install --global Microsoft.PowerApps.CLI.Tool
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+          echo "$USERPROFILE/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Export and unpack MoJ Shared Base
         id: export-a
@@ -134,4 +137,8 @@ jobs:
         uses: ./.github/actions/export-config-data
         with:
           schema_file: data/config/schema.xml
+          environment_url: ${{ env.POWERPLATFORMDEVELOPERDEV_ENVIRONMENTURL }}
+          client_id: ${{ env.POWERPLATFORMDEVELOPERDEV_CLIENTID }}
+          client_secret: ${{ env.POWERPLATFORMDEVELOPERDEV_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}

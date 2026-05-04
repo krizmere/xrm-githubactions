@@ -35,22 +35,12 @@ permissions:
   contents: read
 
 jobs:
-  validate-inputs:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Validate at least one solution is selected
-        run: |
-          if [[ "${{ inputs.deploy_solution_a }}" == "false" &&
-                "${{ inputs.deploy_solution_b }}" == "false" &&
-                "${{ inputs.deploy_solution_c }}" == "false" ]]; then
-            echo "Error: at least one solution must be selected"
-            exit 1
-          fi
-
   deploy:
-    needs: validate-inputs
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -71,7 +61,7 @@ jobs:
       - name: Install Power Platform CLI
         run: |
           dotnet tool install --global Microsoft.PowerApps.CLI.Tool
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+          echo "$USERPROFILE/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Deploy MoJ Shared Base
         if: ${{ inputs.deploy_solution_a }}
@@ -113,4 +103,8 @@ jobs:
         if: ${{ inputs.import_config_data }}
         uses: ./.github/actions/import-config-data
         with:
+          environment_url: ${{ env.PP_ENV_URL }}
+          client_id: ${{ env.PP_APP_CLIENTID }}
+          client_secret: ${{ env.PP_APP_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}

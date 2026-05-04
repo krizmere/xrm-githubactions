@@ -5,6 +5,18 @@ inputs:
   schema_file:
     description: Path to the CMT schema XML file
     required: true
+  environment_url:
+    description: The URL of the Power Platform environment to export from
+    required: true
+  client_id:
+    description: Application (client) ID for authentication
+    required: true
+  client_secret:
+    description: Client secret for authentication
+    required: true
+  tenant_id:
+    description: Azure AD tenant ID for authentication
+    required: true
   gh_token:
     description: GitHub token for creating releases and uploading artifacts
     required: true
@@ -17,6 +29,16 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Authenticate with Power Platform
+      shell: bash
+      run: |
+        pac auth create \
+          --environment "${{ inputs.environment_url }}" \
+          --applicationId "${{ inputs.client_id }}" \
+          --clientSecret "${{ inputs.client_secret }}" \
+          --tenant "${{ inputs.tenant_id }}" \
+          --accept-cleartext-caching
+
     - name: Export configuration data
       shell: bash
       run: |
