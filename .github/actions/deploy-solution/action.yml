@@ -20,6 +20,9 @@ inputs:
   gh_token:
     description: GitHub token for reading releases and downloading artifacts
     required: true
+  settings_file:
+    description: Path to the deployment settings JSON file for connection references and environment variables
+    required: false
 
 runs:
   using: composite
@@ -67,7 +70,12 @@ runs:
     - name: Import solution
       shell: bash
       run: |
+        SETTINGS_ARG=""
+        if [[ -n "${{ inputs.settings_file }}" && -f "${{ inputs.settings_file }}" ]]; then
+          SETTINGS_ARG="--settings-file ${{ inputs.settings_file }}"
+        fi
         pac solution import \
           --path "deploy/${{ inputs.solution_unique_name }}_managed_${{ steps.resolve.outputs.version }}.zip" \
           --activate-plugins true \
-          --force-overwrite true
+          --force-overwrite true \
+          $SETTINGS_ARG

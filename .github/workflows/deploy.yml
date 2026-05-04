@@ -79,6 +79,7 @@ jobs:
           client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
+          settings_file: config/deployment-settings/${{ inputs.environment }}/solution_a.json
 
       - name: Deploy MoJ Shared Automation
         if: ${{ inputs.deploy_solution_b }}
@@ -90,6 +91,7 @@ jobs:
           client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
+          settings_file: config/deployment-settings/${{ inputs.environment }}/solution_b.json
 
       - name: Deploy LADMS Apps
         if: ${{ inputs.deploy_solution_c }}
@@ -101,3 +103,4 @@ jobs:
           client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
+          settings_file: config/deployment-settings/${{ inputs.environment }}/solution_c.json
