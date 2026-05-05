@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<forms xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <systemform>
+    <formid>{2c732f57-1fac-4794-a7f4-5197203173b4}</formid>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <FormPresentation>1</FormPresentation>
+    <FormActivationState>1</FormActivationState>
+    <form>
+      <tabs>
+        <tab verticallayout="true" id="{59a20441-4a1b-4628-8e07-462e26eeb84e}" IsUserDefined="1">
+          <labels>
+            <label description="General" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section showlabel="false" showbar="false" IsUserDefined="0" id="{d305c8b1-20eb-42c5-88f5-0254e5d9563a}">
+                  <labels>
+                    <label description="General" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{ed64ec67-dadf-4144-b703-48b4f8a55a3d}">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="kc_transactionname" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="kc_transactionname" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{58efe70f-f7b3-4851-8ee5-9833ed18a78f}">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="ownerid" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="ownerid" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{5c59f5e9-aeec-42f6-bc4c-83a8b3ffd0b5}">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="kc_transactiondate" classid="{5b773807-9fb2-42db-97c3-7a91eff8adff}" datafieldname="kc_transactiondate" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{d30d60f2-f235-4a57-bae0-36d0e7c4e939}">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="kc_amount" classid="{533b9e00-756b-4312-95a0-dc888637ac78}" datafieldname="kc_amount" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{a1c324ef-d27d-4f01-9a08-c21c59eecf4f}">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="kc_accountid" classid="{270bd3db-d9af-4782-9025-509e298dec0a}" datafieldname="kc_accountid" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+      </tabs>
+    </form>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <LocalizedNames>
+      <LocalizedName description="Information" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="A form for this entity." languagecode="1033" />
+    </Descriptions>
+  </systemform>
+</forms>
