@@ -1,0 +1,131 @@
+name: Install PAC CLI from MSI (Step by Step Verification)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  install:
+    runs-on: windows-latest
+
+    steps:
+    # ------------------------------------------------
+    # STEP 1: Download the MSI
+    # ------------------------------------------------
+    - name: Download MSI from official link
+      shell: pwsh
+      run: |
+        Write-Host "Downloading PAC CLI MSI..."
+        $url = "https://aka.ms/PowerAppsCLI"
+        $output = "${{ runner.temp }}\paccli.msi"
+        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+
+        # Store the path for later steps
+        Add-Content -Path $env:GITHUB_ENV -Value "MSI_PATH=$output"
+        Write-Host "MSI downloaded to: $output"
+
+    # ------------------------------------------------
+    # STEP 2: Verify the download
+    # ------------------------------------------------
+    - name: Verify MSI file exists and has a minimum size
+      shell: pwsh
+      run: |
+        $msi = "${{ env.MSI_PATH }}"
+        if (-not (Test-Path $msi)) {
+          Write-Error "FATAL: MSI file not found at $msi"
+          exit 1
+        }
+
+        $file = Get-Item $msi
+        $sizeMB = [math]::Round($file.Length / 1MB, 2)
+        Write-Host "File size: $sizeMB MB"
+
+        # The MSI is usually > 15 MB, if it's smaller something is wrong
+        if ($file.Length -lt 10MB) {
+          Write-Error "FATAL: MSI is smaller than 10 MB, download might be corrupted"
+          exit 1
+        }
+
+        # Optional: display hash to manually verify if needed
+        $hash = (Get-FileHash $msi -Algorithm SHA256).Hash
+        Write-Host "SHA256: $hash"
+        Write-Host "✅ Download verification passed"
+
+    # ------------------------------------------------
+    # STEP 3: Install the MSI silently
+    # ------------------------------------------------
+    - name: Run MSI installer
+      shell: pwsh
+      run: |
+        $msi = "${{ env.MSI_PATH }}"
+        Write-Host "Starting installation..."
+        $proc = Start-Process -FilePath "msiexec.exe" `
+                              -ArgumentList "/i `"$msi`" /quiet /norestart /L*v `"${{ runner.temp }}\pac_install.log`"" `
+                              -Wait -NoNewWindow -PassThru
+
+        $exitCode = $proc.ExitCode
+        Write-Host "msiexec exit code: $exitCode"
+
+        if ($exitCode -ne 0) {
+          Write-Error "FATAL: Installation failed with exit code $exitCode"
+          # Dump the log to help debugging
+          Get-Content "${{ runner.temp }}\pac_install.log" -ErrorAction SilentlyContinue
+          exit 1
+        }
+        Write-Host "✅ Installer finished successfully (exit 0)"
+
+    # ------------------------------------------------
+    # STEP 4: Verify the PAC executable exists
+    # ------------------------------------------------
+    - name: Check for pac.exe in expected locations
+      shell: pwsh
+      run: |
+        $possiblePaths = @(
+          "C:\Program Files\Microsoft Power Platform CLI\pac.exe",
+          "C:\Program Files (x86)\Microsoft Power Platform CLI\pac.exe",
+          "C:\Program Files\Microsoft Power Apps CLI\pac.exe",
+          "C:\Program Files (x86)\Microsoft Power Apps CLI\pac.exe"
+        )
+
+        $found = $null
+        foreach ($path in $possiblePaths) {
+          if (Test-Path $path) {
+            $found = $path
+            Write-Host "Found PAC executable at: $found"
+            break
+          } else {
+            Write-Host "Not found at: $path"
+          }
+        }
+
+        if (-not $found) {
+          # Last resort: search the whole drive (may take a few seconds)
+          Write-Host "Searching for pac.exe on C:\ (this may take 20-30 seconds)..."
+          $found = (Get-ChildItem -Path C:\ -Filter pac.exe -Recurse -ErrorAction SilentlyContinue |
+                    Where-Object { $_.FullName -like "*Power*Platform*" -or $_.FullName -like "*Power*Apps*" } |
+                    Select-Object -First 1).FullName
+        }
+
+        if (-not $found) {
+          Write-Error "FATAL: pac.exe was not found anywhere. Installation may have silently failed."
+          exit 1
+        }
+
+        # Store the verified path permanently for later steps
+        Add-Content -Path $env:GITHUB_ENV -Value "PAC_EXE=$found"
+        Write-Host "✅ PAC executable found and verified"
+
+    # ------------------------------------------------
+    # STEP 5: Finally, run pac --version
+    # ------------------------------------------------
+    - name: Test PAC CLI version
+      shell: pwsh
+      run: |
+        $pac = "${{ env.PAC_EXE }}"
+        Write-Host "Testing: & `"$pac`" --version"
+        & "$pac" --version
+
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "FATAL: pac --version returned exit code $LASTEXITCODE"
+          exit 1
+        }
+        Write-Host "✅ PAC CLI works correctly"
