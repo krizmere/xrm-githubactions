@@ -59,7 +59,14 @@ jobs:
           keyvault_name: ${{ secrets.AZURE_KEYVAULT_NAME }}
 
       - name: Install Power Platform CLI
-        uses: microsoft/powerplatform-actions/actions-install@v1
+        shell: pwsh
+        run: |
+          $msiPath = Join-Path $env:RUNNER_TEMP "powerapps-cli.msi"
+          Invoke-WebRequest -Uri "https://aka.ms/PowerAppsCLI" -OutFile $msiPath -UseBasicParsing
+          Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /quiet /norestart" -Wait
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+          $pacDir = (Get-Command pac).DirectoryName
+          echo $pacDir >> $env:GITHUB_PATH
 
       - name: Deploy MoJ Shared Base
         if: ${{ inputs.deploy_solution_a }}
