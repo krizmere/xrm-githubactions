@@ -1,0 +1,26 @@
+name: Install Power Platform CLI
+description: Installs PAC CLI via Windows MSI and adds it to PATH
+
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      run: |
+        $msiPath = "$env:RUNNER_TEMP\PowerPlatformCLI.msi"
+        Invoke-WebRequest -Uri "https://aka.ms/PowerAppsCLI" -OutFile $msiPath -UseBasicParsing
+        $result = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/i `"$msiPath`" /quiet /norestart"
+        if ($result.ExitCode -ne 0) { Write-Error "MSI install failed (exit code $($result.ExitCode))"; exit 1 }
+
+        $nugetBase = "C:\Users\runneradmin\.nuget\packages\microsoft.powerapps.cli"
+        $timeout = 120; $elapsed = 0; $pacExe = $null
+        while ($elapsed -lt $timeout) {
+          $versionDir = Get-ChildItem $nugetBase -Directory -ErrorAction SilentlyContinue |
+                        Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
+          if ($versionDir) {
+            $candidate = Join-Path $versionDir.FullName "tools\pac.exe"
+            if (Test-Path $candidate) { $pacExe = $candidate; break }
+          }
+          Start-Sleep -Seconds 2; $elapsed += 2
+        }
+        if (-not $pacExe) { Write-Error "pac.exe not found after ${timeout}s"; exit 1 }
+        echo (Split-Path $pacExe -Parent) >> $env:GITHUB_PATH

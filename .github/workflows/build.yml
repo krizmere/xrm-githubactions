@@ -58,19 +58,8 @@ jobs:
           secret_names: ${{ vars.KEYVAULT_SECRET_NAMES }}
           keyvault_name: ${{ secrets.AZURE_KEYVAULT_NAME }}
 
-      - name: Install Power Platform CLI using MSI
-        shell: pwsh
-        run: |
-          $url = "https://aka.ms/PowerAppsCLI"
-          $output = "${{ runner.temp }}\paccli.msi"
-          Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
-          Add-Content -Path $env:GITHUB_ENV -Value "MSI_PATH=$output"
-
-      - name: Verify installation
-        run: pac --version
-
-      - name: Verify data command works
-        run: pac data
+      - name: Install Power Platform CLI
+        uses: ./.github/actions/install-pac-cli
 
       - name: Export and unpack MoJ Shared Base
         id: export-a

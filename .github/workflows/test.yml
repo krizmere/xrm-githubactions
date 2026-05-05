@@ -1,4 +1,4 @@
-name: Install PAC CLI from MSI (Step by Step Verification)
+name: Test PAC CLI Install Action
 
 on:
   workflow_dispatch:
@@ -6,91 +6,14 @@ on:
 jobs:
   install:
     runs-on: windows-latest
-
     steps:
-    # ------------------------------------------------
-    # STEP 1: Download the MSI
-    # ------------------------------------------------
-    - name: Download MSI from official link
-      shell: pwsh
-      run: |
-        Write-Host "Downloading PAC CLI MSI..."
-        $url = "https://aka.ms/PowerAppsCLI"
-        $output = "${{ runner.temp }}\paccli.msi"
-        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+      - uses: actions/checkout@v6
 
-        # Store the path for later steps
-        Add-Content -Path $env:GITHUB_ENV -Value "MSI_PATH=$output"
-        Write-Host "MSI downloaded to: $output"
+      - name: Install Power Platform CLI
+        uses: ./.github/actions/install-pac-cli
 
-    # ------------------------------------------------
-    # STEP 3: Install the MSI silently
-    # ------------------------------------------------
-    - name: Run MSI installer
-      shell: pwsh
-      run: |
-        $msi = "${{ env.MSI_PATH }}"
-        Write-Host "Starting installation..."
-        $proc = Start-Process -FilePath "msiexec.exe" `
-                              -ArgumentList "/i `"$msi`" /quiet /norestart /L*v `"${{ runner.temp }}\pac_install.log`"" `
-                              -Wait -NoNewWindow -PassThru
-
-        $exitCode = $proc.ExitCode
-        Write-Host "msiexec exit code: $exitCode"
-
-        if ($exitCode -ne 0) {
-          Write-Error "FATAL: Installation failed with exit code $exitCode"
-          # Dump the log to help debugging
-          Get-Content "${{ runner.temp }}\pac_install.log" -ErrorAction SilentlyContinue
-          exit 1
-        }
-        Write-Host "✅ Installer finished successfully (exit 0)"
-
-    # ------------------------------------------------
-    # STEP 4: Verify the PAC executable exists
-    # ------------------------------------------------
-    - name: Check for pac.exe in expected locations
-      shell: pwsh
-      run: |
-        $nugetBase = "C:\Users\runneradmin\.nuget\packages\microsoft.powerapps.cli"
-        $timeout = 120
-        $elapsed = 0
-        $found = $null
-
-        while ($elapsed -lt $timeout) {
-          $versionDir = Get-ChildItem $nugetBase -Directory -ErrorAction SilentlyContinue |
-                        Sort-Object { [version]$_.Name } -Descending |
-                        Select-Object -First 1
-          if ($versionDir) {
-            $candidate = Join-Path $versionDir.FullName "tools\pac.exe"
-            if (Test-Path $candidate) { $found = $candidate; break }
-          }
-          Write-Host "Waiting for NuGet extraction to complete... ($elapsed s)"
-          Start-Sleep -Seconds 2
-          $elapsed += 2
-        }
-
-        if (-not $found) {
-          Write-Error "FATAL: pac.exe not found after ${timeout}s. Installation may have silently failed."
-          exit 1
-        }
-
-        Write-Host "Found PAC executable at: $found"
-        Add-Content -Path $env:GITHUB_ENV -Value "pac=$found"
-        Write-Host "✅ PAC executable found and verified"
-
-    # ------------------------------------------------
-    # STEP 5: Finally, run pac --version
-    # ------------------------------------------------
-    - name: Test PAC CLI version
-      shell: pwsh
-      run: |
-        $pac = "${{ env.pac }}"
-        Write-Host "Testing: & `"$pac`" data"
-        & "$pac" data
-
-        if ($LASTEXITCODE -ne 0) {
-          Write-Error "FATAL: pac data returned exit code $LASTEXITCODE"
-          exit 1
-        }
-        Write-Host "✅ PAC CLI works correctly"
+      - name: Verify
+        shell: pwsh
+        run: |
+          pac --version
+          pac data
