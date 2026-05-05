@@ -59,9 +59,7 @@ jobs:
           keyvault_name: ${{ secrets.AZURE_KEYVAULT_NAME }}
 
       - name: Install Power Platform CLI
-        run: |
-          dotnet tool install --global Microsoft.PowerApps.CLI.Tool
-          echo "$USERPROFILE/.dotnet/tools" >> $GITHUB_PATH
+        uses: microsoft/powerplatform-actions/actions-install@v1
 
       - name: Export and unpack MoJ Shared Base
         id: export-a
