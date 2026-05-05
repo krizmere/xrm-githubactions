@@ -52,12 +52,10 @@ jobs:
     - name: Check for pac.exe in expected locations
       shell: pwsh
       run: |
-        $versionDir = Get-ChildItem "C:\Users\runneradmin\.nuget\packages\microsoft.powerapps.cli" `
-                        -Directory -ErrorAction SilentlyContinue |
-                      Sort-Object { [version]$_.Name } -Descending |
-                      Select-Object -First 1
-        $found = if ($versionDir) { Join-Path $versionDir.FullName "tools\pac.exe" } else { $null }
-        if ($found -and -not (Test-Path $found)) { $found = $null }
+        $found = Get-Item "C:\Users\runneradmin\.nuget\packages\microsoft.powerapps.cli\2.6.4\tools\pac.exe" `
+                   -ErrorAction SilentlyContinue |
+                 Sort-Object { [version]($_.Directory.Parent.Name) } -Descending |
+                 Select-Object -First 1 -ExpandProperty FullName
 
         if (-not $found) {
           Write-Error "FATAL: pac.exe not found in NuGet packages cache. Installation may have silently failed."
