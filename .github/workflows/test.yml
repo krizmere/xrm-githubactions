@@ -83,14 +83,14 @@ jobs:
           exit 1
         }
 
+        if ($found) {
+          Write-Host $found
+        }
+
         # Store the verified path permanently for later steps
         Add-Content -Path $env:GITHUB_ENV -Value "pac=$found"
         Write-Host "✅ PAC executable found and verified"
 
-    - name: Test PAC CLI data command
-      shell: pwsh
-      run: |
-        pac data
     # ------------------------------------------------
     # STEP 5: Finally, run pac --version
     # ------------------------------------------------
@@ -98,11 +98,11 @@ jobs:
       shell: pwsh
       run: |
         $pac = "${{ env.pac }}"
-        Write-Host "Testing: & `"$pac`" --version"
-        & "$pac" --version
+        Write-Host "Testing: & `"$pac`" data"
+        & "$pac" data
 
         if ($LASTEXITCODE -ne 0) {
-          Write-Error "FATAL: pac --version returned exit code $LASTEXITCODE"
+          Write-Error "FATAL: pac data returned exit code $LASTEXITCODE"
           exit 1
         }
         Write-Host "✅ PAC CLI works correctly"
