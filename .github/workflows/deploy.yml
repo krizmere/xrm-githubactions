@@ -61,12 +61,19 @@ jobs:
       - name: Install Power Platform CLI
         shell: pwsh
         run: |
-          $msiPath = Join-Path $env:RUNNER_TEMP "powerapps-cli.msi"
+          $msiPath = "$env:RUNNER_TEMP\PowerPlatformCLI.msi"
           Invoke-WebRequest -Uri "https://aka.ms/PowerAppsCLI" -OutFile $msiPath -UseBasicParsing
-          Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /quiet /norestart" -Wait
+          $result = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/i `"$msiPath`" /quiet /norestart"
+          if ($result.ExitCode -ne 0) { Write-Error "MSI install failed (exit code $($result.ExitCode))"; exit 1 }
           $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
-          $pacDir = Split-Path (Get-Command pac).Source -Parent
-          echo $pacDir >> $env:GITHUB_PATH
+          $pacExe = (Get-Command pac -ErrorAction SilentlyContinue)?.Source
+          if (-not $pacExe) {
+            $pacExe = @("C:\Program Files (x86)\Microsoft Power Platform CLI\pac.exe",
+                        "C:\Program Files\Microsoft Power Platform CLI\pac.exe") |
+                      Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+          if (-not $pacExe) { Write-Error "pac.exe not found after installation"; exit 1 }
+          echo (Split-Path $pacExe -Parent) >> $env:GITHUB_PATH
 
       - name: Deploy MoJ Shared Base
         if: ${{ inputs.deploy_solution_a }}
