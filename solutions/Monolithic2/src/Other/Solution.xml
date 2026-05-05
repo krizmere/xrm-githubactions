@@ -6,7 +6,7 @@
       <LocalizedName description="Monolithic2" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.2</Version>
+    <Version>1.0.0.3</Version>
     <Managed>1</Managed>
     <Publisher>
       <UniqueName>KasmaraConsulting</UniqueName>
@@ -78,16 +78,41 @@
       </Addresses>
     </Publisher>
     <RootComponents>
+      <RootComponent type="1" schemaName="kc_bankaccount" behavior="2" />
       <RootComponent type="80" schemaName="kc_App00" behavior="0" />
     </RootComponents>
     <MissingDependencies>
       <MissingDependency>
         <Required type="1" schemaName="kc_bankaccount" displayName="BankAccount" solution="Active" />
-        <Dependent type="80" schemaName="kc_App00" displayName="App00" />
+        <Dependent type="1" schemaName="kc_bankaccount" displayName="BankAccount" />
       </MissingDependency>
       <MissingDependency>
         <Required type="1" schemaName="kc_transaction" displayName="Transaction" solution="Active" />
         <Dependent type="80" schemaName="kc_App00" displayName="App00" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="createdon" displayName="Created On" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_accountname" displayName="Account Name" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_accountnumber" displayName="Account Number" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_bankaccountid" displayName="BankAccount" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_branch" displayName="Branch" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_bsb" displayName="BSB" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
       </MissingDependency>
       <MissingDependency>
         <Required type="61" schemaName="msdyn_/Images/AppModule_Default_Icon.png" displayName="msdyn_/Images/AppModule_Default_Icon.png" solution="AppModuleWebResources (2.5)">
