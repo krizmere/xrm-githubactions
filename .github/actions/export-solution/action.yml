@@ -65,7 +65,36 @@ runs:
       shell: bash
       run: |
         SOLUTION_XML="solutions/${{ inputs.solution_unique_name }}/src/Other/Solution.xml"
-        CURRENT_VERSION=$(grep -oP '(?<=<Version>)[^<]+' "$SOLUTION_XML" 2>/dev/null || echo "1.0.0.0")
+        XML_VERSION=$(grep -oP '(?<=<Version>)[^<]+' "$SOLUTION_XML" 2>/dev/null || echo "1.0.0.0")
+
+        # Fetch all tags so we can detect any previously released version
+        git fetch --tags --quiet 2>/dev/null || true
+        LATEST_TAG_VERSION=$(git tag --list "${{ inputs.solution_unique_name }}/v*" \
+          | sed "s|${{ inputs.solution_unique_name }}/v||" \
+          | sort -V | tail -1)
+        TAG_VERSION="${LATEST_TAG_VERSION:-0.0.0.0}"
+
+        echo "XML version : $XML_VERSION"
+        echo "Tag version : $TAG_VERSION"
+
+        # Compare two dotted-quad version strings; returns 0 (true) if $1 > $2
+        version_gt() {
+          IFS='.' read -ra A <<< "$1"; IFS='.' read -ra B <<< "$2"
+          for i in 0 1 2 3; do
+            a=${A[$i]:-0}; b=${B[$i]:-0}
+            (( a > b )) && return 0
+            (( a < b )) && return 1
+          done
+          return 1
+        }
+
+        # Always base the bump on the highest known version to prevent regression
+        if version_gt "$TAG_VERSION" "$XML_VERSION"; then
+          echo "WARNING: Tag version ($TAG_VERSION) is ahead of XML version ($XML_VERSION) — using tag version as base to prevent regression."
+          CURRENT_VERSION="$TAG_VERSION"
+        else
+          CURRENT_VERSION="$XML_VERSION"
+        fi
 
         IFS='.' read -ra V <<< "$CURRENT_VERSION"
         MAJOR=${V[0]:-1}; MINOR=${V[1]:-0}; BUILD=${V[2]:-0}; REVISION=${V[3]:-0}
@@ -81,13 +110,18 @@ runs:
 
         if [ "${{ inputs.version_bump }}" != "none (export only)" ]; then
           NEW_VERSION="${MAJOR}.${MINOR}.${BUILD}.${REVISION}"
+          # Hard stop: the computed version must be strictly greater than the latest tag
+          if ! version_gt "$NEW_VERSION" "$TAG_VERSION"; then
+            echo "ERROR: Computed version $NEW_VERSION is not greater than the latest released tag $TAG_VERSION. Aborting to prevent a duplicate or regressed release."
+            exit 1
+          fi
         fi
 
         echo "Current version : $CURRENT_VERSION"
         echo "New version     : $NEW_VERSION"
 
-        if [ "$NEW_VERSION" != "$CURRENT_VERSION" ]; then
-          sed -i "s|<Version>${CURRENT_VERSION}</Version>|<Version>${NEW_VERSION}</Version>|" "$SOLUTION_XML"
+        if [ "$NEW_VERSION" != "$XML_VERSION" ]; then
+          sed -i "s|<Version>${XML_VERSION}</Version>|<Version>${NEW_VERSION}</Version>|" "$SOLUTION_XML"
           echo "Updated Solution.xml to $NEW_VERSION"
         fi
 
