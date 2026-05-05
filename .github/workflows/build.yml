@@ -59,11 +59,12 @@ jobs:
           keyvault_name: ${{ secrets.AZURE_KEYVAULT_NAME }}
 
       - name: Install Power Platform CLI
-        shell: powershell
+        shell: pwsh
         run: |
           Invoke-WebRequest -Uri "https://aka.ms/PowerPlatformCLI" -OutFile "${{ runner.temp }}\PowerPlatformCLI.msi"
           Start-Process msiexec.exe -Wait -ArgumentList '/i "${{ runner.temp }}\PowerPlatformCLI.msi" /quiet /norestart'
-          refreshenv
+          # Refresh environment variables in current session
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
       - name: Verify installation
         run: pac --version
