@@ -52,18 +52,39 @@ jobs:
     - name: Check for pac.exe in expected locations
       shell: pwsh
       run: |
-        $found = Get-Item "C:\Users\runneradmin\.nuget\packages\microsoft.powerapps.cli\2.6.4\tools\pac.exe" `
-                   -ErrorAction SilentlyContinue |
-                 Sort-Object { [version]($_.Directory.Parent.Name) } -Descending |
-                 Select-Object -First 1 -ExpandProperty FullName
+        $possiblePaths = @(
+          "C:\Program Files\Microsoft Power Platform CLI\pac.exe",
+          "C:\Program Files (x86)\Microsoft Power Platform CLI\pac.exe",
+          "C:\Program Files\Microsoft Power Apps CLI\pac.exe",
+          "C:\Users\runneradmin\.nuget\packages\microsoft.powerapps.cli\2.6.4\tools\pac.exe"
+        )
+
+        $found = $null
+        foreach ($path in $possiblePaths) {
+          if (Test-Path $path) {
+            $found = $path
+            Write-Host "Found PAC executable at: $found"
+            break
+          } else {
+            Write-Host "Not found at: $path"
+          }
+        }
 
         if (-not $found) {
-          Write-Error "FATAL: pac.exe not found in NuGet packages cache. Installation may have silently failed."
+          # Last resort: search the whole drive (may take a few seconds)
+          Write-Host "Searching for pac.exe on C:\ (this may take 20-30 seconds)..."
+          $found = (Get-ChildItem -Path C:\ -Filter pac.exe -Recurse -ErrorAction SilentlyContinue |
+                    Where-Object { $_.FullName -like "*Power*Platform*" -or $_.FullName -like "*Power*Apps*" } |
+                    Select-Object -First 1).FullName
+        }
+
+        if (-not $found) {
+          Write-Error "FATAL: pac.exe was not found anywhere. Installation may have silently failed."
           exit 1
         }
 
-        Write-Host "Found PAC executable at: $found"
-        Add-Content -Path $env:GITHUB_ENV -Value "PAC_EXE=$found"
+        # Store the verified path permanently for later steps
+        Add-Content -Path $env:GITHUB_ENV -Value "pac=$found"
         Write-Host "✅ PAC executable found and verified"
 
     - name: Test PAC CLI data command
@@ -76,7 +97,7 @@ jobs:
     - name: Test PAC CLI version
       shell: pwsh
       run: |
-        $pac = "${{ env.PAC_EXE }}"
+        $pac = "${{ env.pac }}"
         Write-Host "Testing: & `"$pac`" --version"
         & "$pac" --version
 
