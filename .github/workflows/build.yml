@@ -61,35 +61,10 @@ jobs:
       - name: Install Power Platform CLI using MSI
         shell: pwsh
         run: |
-          # 1. Define the download URL and the installation path
-          $msiUrl = "https://aka.ms/PowerAppsCLI"
-          $installerPath = "$env:TEMP\PowerAppsCLI.msi"
-          $installPath = "C:\tools\PowerAppsCLI" # Standard installation directory for the MSI
-
-          # 2. Download the MSI installer
-          Write-Host "Downloading Power Platform CLI MSI..."
-          Invoke-WebRequest -Uri $msiUrl -OutFile $installerPath
-
-          # 3. Silently install the MSI
-          Write-Host "Installing Power Platform CLI..."
-          $installArgs = @(
-              "/i `"$installerPath`""
-              "/quiet"
-              "/norestart"
-              "APPLICATIONFOLDER=`"$installPath`""
-          )
-          $process = Start-Process -FilePath "msiexec.exe" -ArgumentList $installArgs -Wait -PassThru
-
-          # 4. Check if installation was successful
-          if ($process.ExitCode -ne 0 -and $process.ExitCode -ne 3010) {
-              Write-Error "Installation failed with exit code: $($process.ExitCode)"
-              exit $process.ExitCode
-          }
-          Write-Host "Installation completed."
-
-          # 5. Add the installation directory to GITHUB_PATH for subsequent steps
-          Write-Host "Adding $installPath to GITHUB_PATH"
-          Add-Content -Path $env:GITHUB_PATH -Value $installPath
+          $url = "https://aka.ms/PowerAppsCLI"
+          $output = "${{ runner.temp }}\paccli.msi"
+          Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+          Add-Content -Path $env:GITHUB_ENV -Value "MSI_PATH=$output"
 
       - name: Verify installation
         run: pac --version

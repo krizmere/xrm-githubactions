@@ -87,6 +87,10 @@ jobs:
         Add-Content -Path $env:GITHUB_ENV -Value "PAC_EXE=$found"
         Write-Host "✅ PAC executable found and verified"
 
+    - name: Test PAC CLI data command
+      shell: pwsh
+      run: |
+        pac data
     # ------------------------------------------------
     # STEP 5: Finally, run pac --version
     # ------------------------------------------------
