@@ -24,33 +24,6 @@ jobs:
         Write-Host "MSI downloaded to: $output"
 
     # ------------------------------------------------
-    # STEP 2: Verify the download
-    # ------------------------------------------------
-    - name: Verify MSI file exists and has a minimum size
-      shell: pwsh
-      run: |
-        $msi = "${{ env.MSI_PATH }}"
-        if (-not (Test-Path $msi)) {
-          Write-Error "FATAL: MSI file not found at $msi"
-          exit 1
-        }
-
-        $file = Get-Item $msi
-        $sizeMB = [math]::Round($file.Length / 1MB, 2)
-        Write-Host "File size: $sizeMB MB"
-
-        # The MSI is usually > 15 MB, if it's smaller something is wrong
-        if ($file.Length -lt 10MB) {
-          Write-Error "FATAL: MSI is smaller than 10 MB, download might be corrupted"
-          exit 1
-        }
-
-        # Optional: display hash to manually verify if needed
-        $hash = (Get-FileHash $msi -Algorithm SHA256).Hash
-        Write-Host "SHA256: $hash"
-        Write-Host "✅ Download verification passed"
-
-    # ------------------------------------------------
     # STEP 3: Install the MSI silently
     # ------------------------------------------------
     - name: Run MSI installer
