@@ -24,5 +24,5 @@ runs:
           fi
           echo "::add-mask::$SECRET_VALUE"
           ENV_VAR=$(echo "$SECRET_NAME" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
-          printf '%s<<=__EOF__\n%s\n__EOF__\n' "$ENV_VAR" "$SECRET_VALUE" >> $GITHUB_ENV
+          printf '%s<<__EOF__\n%s\n__EOF__\n' "$ENV_VAR" "$SECRET_VALUE" >> $GITHUB_ENV
         done

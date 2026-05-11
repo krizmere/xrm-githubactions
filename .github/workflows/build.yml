@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       version_bump:
-        description: 'Version bump for all selected solutions (none = export and commit source only, no release created)'
+        description: 'Version increment for all selected solutions (none = export and commit source only, no release created)'
         type: choice
         options:
-          - none (export only)
+          - none
           - revision
           - build
           - minor
