@@ -52,7 +52,7 @@ runs:
         echo "Downloading $ARTIFACT_NAME from run $RUN_ID"
         mkdir -p deploy
         gh run download "$RUN_ID" --name "$ARTIFACT_NAME" --dir deploy-tmp
-        mv deploy-tmp/"$ARTIFACT_NAME"/*.zip deploy/
+        find deploy-tmp -name "*.zip" -type f -exec mv {} deploy/ \;
         rm -rf deploy-tmp
 
     - name: Download solution from latest release

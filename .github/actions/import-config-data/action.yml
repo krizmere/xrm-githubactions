@@ -54,7 +54,8 @@ runs:
 
         echo "Downloading config-data artifact from run $RUN_ID"
         gh run download "$RUN_ID" --name "config-data" --dir config-tmp
-        mv config-tmp/config-data/config-data.zip .
+        ARTIFACT_ZIP=$(find config-tmp -name "config-data.zip" -type f | head -1)
+        mv "$ARTIFACT_ZIP" config-data.zip
         rm -rf config-tmp
 
     - name: Download config data from latest release
