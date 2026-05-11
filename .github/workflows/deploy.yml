@@ -79,7 +79,7 @@ jobs:
           client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
-          settings_file: config/deployment-settings/${{ inputs.environment }}/solution_a.json
+          settings_file: config/deployment-settings/${{ inputs.environment }}/solution_a.json # Unused for solution A but included if needed in the future
           source: ${{ inputs.deploy_source }}
 
       - name: Deploy MoJ Shared Automation
@@ -105,7 +105,7 @@ jobs:
           client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
-          settings_file: config/deployment-settings/${{ inputs.environment }}/solution_c.json
+          settings_file: config/deployment-settings/${{ inputs.environment }}/solution_c.json # Unused for solution C but included if needed in the future
           source: ${{ inputs.deploy_source }}
 
       - name: Import configuration data

@@ -1,0 +1,60 @@
+name: PowerPlatformRelease
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Install Power Platform CLI
+        uses: ./.github/actions/install-pac-cli
+
+      - name: Pack all solutions
+        run: |
+          for SOLUTION_NAME in \
+            "${{ vars.SOLUTION_A_UNIQUE_NAME }}" \
+            "${{ vars.SOLUTION_B_UNIQUE_NAME }}" \
+            "${{ vars.SOLUTION_C_UNIQUE_NAME }}"; do
+            VERSION=$(grep -oP '(?<=<Version>)[^<]+' "solutions/${SOLUTION_NAME}/src/Other/Solution.xml")
+            pac solution pack \
+              --zipfile "solutions/${SOLUTION_NAME}/${SOLUTION_NAME}_managed_${VERSION}.zip" \
+              --folder "solutions/${SOLUTION_NAME}/src" \
+              --packagetype Managed
+          done
+
+      - name: Create release tag and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="release/run-${{ github.run_number }}"
+          RELEASE_FILES=()
+          RELEASE_NOTES="Release from the latest main branch."$'\n\n'"**Solutions:**"
+
+          for ZIP in solutions/*/*_managed_*.zip; do
+            RELEASE_FILES+=("$ZIP")
+            RELEASE_NOTES+=$'\n'"- $(basename "$ZIP" .zip)"
+          done
+
+          if [[ -f "data/config/config-data.zip" ]]; then
+            RELEASE_FILES+=("data/config/config-data.zip")
+            RELEASE_NOTES+=$'\n\n'"**Config Data:** included"
+          fi
+
+          git tag "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" \
+            --title "Release run-${{ github.run_number }}" \
+            --notes "$RELEASE_NOTES" \
+            "${RELEASE_FILES[@]}"

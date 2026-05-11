@@ -1,0 +1,43 @@
+name: Pack Power Platform Solution
+description: Packs a solution from source into a managed zip and uploads it as a workflow artifact
+
+inputs:
+  solution_unique_name:
+    description: The unique name of the solution to pack
+    required: true
+  retention_days:
+    description: Number of days to retain the artifact
+    required: false
+    default: '30'
+
+outputs:
+  version:
+    description: The solution version read from Solution.xml
+    value: ${{ steps.pack.outputs.version }}
+  zip_path:
+    description: Path to the created managed solution zip
+    value: ${{ steps.pack.outputs.zip_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Pack solution
+      id: pack
+      shell: bash
+      run: |
+        SOLUTION_NAME="${{ inputs.solution_unique_name }}"
+        VERSION=$(grep -oP '(?<=<Version>)[^<]+' "solutions/${SOLUTION_NAME}/src/Other/Solution.xml")
+        ZIP_PATH="solutions/${SOLUTION_NAME}/${SOLUTION_NAME}_managed_${VERSION}.zip"
+        pac solution pack \
+          --zipfile "$ZIP_PATH" \
+          --folder "solutions/${SOLUTION_NAME}/src" \
+          --packagetype Managed
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "zip_path=$ZIP_PATH" >> $GITHUB_OUTPUT
+
+    - name: Upload solution artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.solution_unique_name }}_managed_${{ steps.pack.outputs.version }}
+        path: ${{ steps.pack.outputs.zip_path }}
+        retention-days: ${{ inputs.retention_days }}

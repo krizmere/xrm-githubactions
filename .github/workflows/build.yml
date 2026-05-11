@@ -1,47 +1,20 @@
 name: PowerPlatformBuild
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'solutions/**/src/**'
+      - 'data/config/config-data.zip'
   workflow_dispatch:
-    inputs:
-      version_bump:
-        description: 'Version increment for all selected solutions (none = export and commit source only)'
-        type: choice
-        options:
-          - none
-          - revision
-          - build
-          - minor
-          - major
-        default: none
-      create_release:
-        description: 'Create a GitHub release and tag containing all exported solutions and config data'
-        type: boolean
-        default: false
-      export_solution_a:
-        description: 'Export MoJ Shared Base'
-        type: boolean
-        default: true
-      export_solution_b:
-        description: 'Export MoJ Shared Automation'
-        type: boolean
-        default: true
-      export_solution_c:
-        description: 'Export LADMS Apps'
-        type: boolean
-        default: true
-      export_config_data:
-        description: Export Config Data
-        type: boolean
-        default: true
 
 permissions:
-  id-token: write
-  contents: write
+  contents: read
 
 jobs:
-  auth-export-unpack-commit:
+  build:
     runs-on: windows-latest
-    environment: developer-dev
     defaults:
       run:
         shell: bash
@@ -49,112 +22,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Log in to Azure using the service principal credentials stored in GitHub Secrets
-        uses: azure/login@v3
-        with:
-          client-id: ${{ secrets.AZURE_GITHUB_KEYVAULT_CLIENTID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Retrieve secrets from Key Vault
-        uses: ./.github/actions/retrieve-keyvault-secrets
-        with:
-          secret_names: ${{ vars.KEYVAULT_SECRET_NAMES }}
-          keyvault_name: ${{ secrets.AZURE_KEYVAULT_NAME }}
-
       - name: Install Power Platform CLI
         uses: ./.github/actions/install-pac-cli
 
-      - name: Export and unpack MoJ Shared Base
-        id: export-a
-        if: ${{ inputs.export_solution_a }}
-        uses: ./.github/actions/export-solution
+      - name: Pack and upload MoJ Shared Base
+        uses: ./.github/actions/pack-solution
         with:
           solution_unique_name: ${{ vars.SOLUTION_A_UNIQUE_NAME }}
-          environment_url: ${{ env.PP_ENV_URL }}
-          client_id: ${{ env.PP_APP_CLIENTID }}
-          client_secret: ${{ env.PP_APP_SECRET }}
-          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          version_bump: ${{ inputs.version_bump }}
 
-      - name: Export and unpack MoJ Shared Automation
-        id: export-b
-        if: ${{ inputs.export_solution_b }}
-        uses: ./.github/actions/export-solution
+      - name: Pack and upload MoJ Shared Automation
+        uses: ./.github/actions/pack-solution
         with:
           solution_unique_name: ${{ vars.SOLUTION_B_UNIQUE_NAME }}
-          environment_url: ${{ env.PP_ENV_URL }}
-          client_id: ${{ env.PP_APP_CLIENTID }}
-          client_secret: ${{ env.PP_APP_SECRET }}
-          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          version_bump: ${{ inputs.version_bump }}
 
-      - name: Export and unpack LADMS Apps
-        id: export-c
-        if: ${{ inputs.export_solution_c }}
-        uses: ./.github/actions/export-solution
+      - name: Pack and upload LADMS Apps
+        uses: ./.github/actions/pack-solution
         with:
           solution_unique_name: ${{ vars.SOLUTION_C_UNIQUE_NAME }}
-          environment_url: ${{ env.PP_ENV_URL }}
-          client_id: ${{ env.PP_APP_CLIENTID }}
-          client_secret: ${{ env.PP_APP_SECRET }}
-          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          version_bump: ${{ inputs.version_bump }}
 
-      - name: Commit and push solution changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          if git diff --staged --quiet; then
-            echo "No changes to commit — solutions are already up to date"
-          else
-            git commit -m "chore: export Power Platform solutions [skip ci]"
-            git push
-          fi
-
-      - name: Export configuration data
-        if: ${{ inputs.export_config_data }}
-        uses: ./.github/actions/export-config-data
+      - name: Upload config data artifact
+        if: hashFiles('data/config/config-data.zip') != ''
+        uses: actions/upload-artifact@v7
         with:
-          schema_file: data/config/schema.xml
-          environment_url: ${{ env.PP_ENV_URL }}
-          client_id: ${{ env.PP_APP_CLIENTID }}
-          client_secret: ${{ env.PP_APP_SECRET }}
-          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-
-      - name: Create combined release with all exported solutions and config data
-        if: ${{ inputs.create_release }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="release/run-${{ github.run_number }}"
-          RELEASE_FILES=()
-          RELEASE_NOTES="Automated export from Power Platform DEV environment."$'\n\n'"**Included:**"
-
-          if [[ "${{ inputs.export_solution_a }}" == "true" ]]; then
-            VERSION="${{ steps.export-a.outputs.solution_version }}"
-            RELEASE_FILES+=("solutions/${{ vars.SOLUTION_A_UNIQUE_NAME }}/${{ vars.SOLUTION_A_UNIQUE_NAME }}_managed_${VERSION}.zip")
-            RELEASE_NOTES+=$'\n'"- ${{ vars.SOLUTION_A_UNIQUE_NAME }} v${VERSION}"
-          fi
-          if [[ "${{ inputs.export_solution_b }}" == "true" ]]; then
-            VERSION="${{ steps.export-b.outputs.solution_version }}"
-            RELEASE_FILES+=("solutions/${{ vars.SOLUTION_B_UNIQUE_NAME }}/${{ vars.SOLUTION_B_UNIQUE_NAME }}_managed_${VERSION}.zip")
-            RELEASE_NOTES+=$'\n'"- ${{ vars.SOLUTION_B_UNIQUE_NAME }} v${VERSION}"
-          fi
-          if [[ "${{ inputs.export_solution_c }}" == "true" ]]; then
-            VERSION="${{ steps.export-c.outputs.solution_version }}"
-            RELEASE_FILES+=("solutions/${{ vars.SOLUTION_C_UNIQUE_NAME }}/${{ vars.SOLUTION_C_UNIQUE_NAME }}_managed_${VERSION}.zip")
-            RELEASE_NOTES+=$'\n'"- ${{ vars.SOLUTION_C_UNIQUE_NAME }} v${VERSION}"
-          fi
-          if [[ "${{ inputs.export_config_data }}" == "true" ]]; then
-            RELEASE_FILES+=("config-data.zip")
-            RELEASE_NOTES+=$'\n'"- Config Data"
-          fi
-
-          git tag "$TAG"
-          git push origin "$TAG"
-          gh release create "$TAG" \
-            --title "Release run-${{ github.run_number }}" \
-            --notes "$RELEASE_NOTES" \
-            "${RELEASE_FILES[@]}"
+          name: config-data
+          path: data/config/config-data.zip
+          retention-days: 30

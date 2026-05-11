@@ -148,9 +148,7 @@ runs:
       shell: bash
       run: rm "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_export.zip"
 
-    - name: Publish solution zip as workflow artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: ${{ inputs.solution_unique_name }}_managed_${{ steps.version.outputs.solution_version }}
-        path: solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_managed_${{ steps.version.outputs.solution_version }}.zip
-        retention-days: 30
+    - name: Remove managed solution zip
+      shell: bash
+      run: |
+        find "solutions/${{ inputs.solution_unique_name }}" -maxdepth 1 -name "*_managed_*.zip" -delete

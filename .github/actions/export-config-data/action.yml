@@ -1,5 +1,5 @@
 name: Export Configuration Migration Data
-description: Exports configuration data using a CMT schema file and publishes it as a workflow artifact
+description: Exports configuration data using a CMT schema file and saves it to data/config/config-data.zip for source control
 
 inputs:
   schema_file:
@@ -36,12 +36,5 @@ runs:
       run: |
         pac data export \
           --schemaFile "${{ inputs.schema_file }}" \
-          --dataFile config-data.zip \
+          --dataFile data/config/config-data.zip \
           --overwrite
-
-    - name: Publish config data as workflow artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: config-data
-        path: config-data.zip
-        retention-days: 90

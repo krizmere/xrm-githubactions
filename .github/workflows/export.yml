@@ -1,0 +1,129 @@
+name: PowerPlatformExport
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version increment for all selected solutions (none = export source only, no version change)'
+        type: choice
+        options:
+          - none
+          - revision
+          - build
+          - minor
+          - major
+        default: none
+      export_solution_a:
+        description: 'Export MoJ Shared Base'
+        type: boolean
+        default: true
+      export_solution_b:
+        description: 'Export MoJ Shared Automation'
+        type: boolean
+        default: true
+      export_solution_c:
+        description: 'Export LADMS Apps'
+        type: boolean
+        default: true
+      export_config_data:
+        description: Export Config Data
+        type: boolean
+        default: true
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  export:
+    runs-on: windows-latest
+    environment: developer-dev
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Log in to Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_GITHUB_KEYVAULT_CLIENTID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Retrieve secrets from Key Vault
+        uses: ./.github/actions/retrieve-keyvault-secrets
+        with:
+          secret_names: ${{ vars.KEYVAULT_SECRET_NAMES }}
+          keyvault_name: ${{ secrets.AZURE_KEYVAULT_NAME }}
+
+      - name: Install Power Platform CLI
+        uses: ./.github/actions/install-pac-cli
+
+      - name: Export and unpack MoJ Shared Base
+        if: ${{ inputs.export_solution_a }}
+        uses: ./.github/actions/export-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_A_UNIQUE_NAME }}
+          environment_url: ${{ env.PP_ENV_URL }}
+          client_id: ${{ env.PP_APP_CLIENTID }}
+          client_secret: ${{ env.PP_APP_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          version_bump: ${{ inputs.version_bump }}
+
+      - name: Export and unpack MoJ Shared Automation
+        if: ${{ inputs.export_solution_b }}
+        uses: ./.github/actions/export-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_B_UNIQUE_NAME }}
+          environment_url: ${{ env.PP_ENV_URL }}
+          client_id: ${{ env.PP_APP_CLIENTID }}
+          client_secret: ${{ env.PP_APP_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          version_bump: ${{ inputs.version_bump }}
+
+      - name: Export and unpack LADMS Apps
+        if: ${{ inputs.export_solution_c }}
+        uses: ./.github/actions/export-solution
+        with:
+          solution_unique_name: ${{ vars.SOLUTION_C_UNIQUE_NAME }}
+          environment_url: ${{ env.PP_ENV_URL }}
+          client_id: ${{ env.PP_APP_CLIENTID }}
+          client_secret: ${{ env.PP_APP_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          version_bump: ${{ inputs.version_bump }}
+
+      - name: Export configuration data
+        if: ${{ inputs.export_config_data }}
+        uses: ./.github/actions/export-config-data
+        with:
+          schema_file: data/config/schema.xml
+          environment_url: ${{ env.PP_ENV_URL }}
+          client_id: ${{ env.PP_APP_CLIENTID }}
+          client_secret: ${{ env.PP_APP_SECRET }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Create branch, commit, and open pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="export/run-${{ github.run_number }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add solutions/ data/config/
+          if git diff --staged --quiet; then
+            echo "No changes detected — skipping pull request creation"
+          else
+            git commit -m "chore: export Power Platform solutions [run ${{ github.run_number }}]"
+            git push origin "$BRANCH"
+            gh pr create \
+              --title "chore: export Power Platform solutions (run ${{ github.run_number }})" \
+              --body "Automated export from Power Platform DEV environment. Review and merge to trigger the artifact build." \
+              --base main \
+              --head "$BRANCH"
+          fi
