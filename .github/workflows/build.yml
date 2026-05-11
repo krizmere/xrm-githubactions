@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version_bump:
-        description: 'Version increment for all selected solutions (none = export and commit source only, no release created)'
+        description: 'Version increment for all selected solutions (none = export and commit source only)'
         type: choice
         options:
           - none
@@ -12,7 +12,11 @@ on:
           - build
           - minor
           - major
-        default: revision
+        default: none
+      create_release:
+        description: 'Create a GitHub release and tag containing all exported solutions and config data'
+        type: boolean
+        default: false
       export_solution_a:
         description: 'Export MoJ Shared Base'
         type: boolean
@@ -109,27 +113,6 @@ jobs:
             git push
           fi
 
-      - name: Tag and release selected solutions
-        if: ${{ inputs.version_bump != 'none (export only)' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          declare -A SOLUTIONS
-          [[ "${{ inputs.export_solution_a }}" == "true" ]] && SOLUTIONS["${{ vars.SOLUTION_A_UNIQUE_NAME }}"]="${{ steps.export-a.outputs.solution_version }}"
-          [[ "${{ inputs.export_solution_b }}" == "true" ]] && SOLUTIONS["${{ vars.SOLUTION_B_UNIQUE_NAME }}"]="${{ steps.export-b.outputs.solution_version }}"
-          [[ "${{ inputs.export_solution_c }}" == "true" ]] && SOLUTIONS["${{ vars.SOLUTION_C_UNIQUE_NAME }}"]="${{ steps.export-c.outputs.solution_version }}"
-
-          for SOLUTION_NAME in "${!SOLUTIONS[@]}"; do
-            VERSION="${SOLUTIONS[$SOLUTION_NAME]}"
-            TAG="${SOLUTION_NAME}/v${VERSION}"
-            git tag "$TAG"
-            git push origin "$TAG"
-            gh release create "$TAG" \
-              --title "${SOLUTION_NAME} v${VERSION}" \
-              --notes "Automated export from Power Platform DEV environment." \
-              "solutions/${SOLUTION_NAME}/${SOLUTION_NAME}_managed_${VERSION}.zip"
-          done
-
       - name: Export configuration data
         if: ${{ inputs.export_config_data }}
         uses: ./.github/actions/export-config-data
@@ -139,4 +122,39 @@ jobs:
           client_id: ${{ env.PP_APP_CLIENTID }}
           client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          gh_token: ${{ github.token }}
+
+      - name: Create combined release with all exported solutions and config data
+        if: ${{ inputs.create_release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="release/run-${{ github.run_number }}"
+          RELEASE_FILES=()
+          RELEASE_NOTES="Automated export from Power Platform DEV environment."$'\n\n'"**Included:**"
+
+          if [[ "${{ inputs.export_solution_a }}" == "true" ]]; then
+            VERSION="${{ steps.export-a.outputs.solution_version }}"
+            RELEASE_FILES+=("solutions/${{ vars.SOLUTION_A_UNIQUE_NAME }}/${{ vars.SOLUTION_A_UNIQUE_NAME }}_managed_${VERSION}.zip")
+            RELEASE_NOTES+=$'\n'"- ${{ vars.SOLUTION_A_UNIQUE_NAME }} v${VERSION}"
+          fi
+          if [[ "${{ inputs.export_solution_b }}" == "true" ]]; then
+            VERSION="${{ steps.export-b.outputs.solution_version }}"
+            RELEASE_FILES+=("solutions/${{ vars.SOLUTION_B_UNIQUE_NAME }}/${{ vars.SOLUTION_B_UNIQUE_NAME }}_managed_${VERSION}.zip")
+            RELEASE_NOTES+=$'\n'"- ${{ vars.SOLUTION_B_UNIQUE_NAME }} v${VERSION}"
+          fi
+          if [[ "${{ inputs.export_solution_c }}" == "true" ]]; then
+            VERSION="${{ steps.export-c.outputs.solution_version }}"
+            RELEASE_FILES+=("solutions/${{ vars.SOLUTION_C_UNIQUE_NAME }}/${{ vars.SOLUTION_C_UNIQUE_NAME }}_managed_${VERSION}.zip")
+            RELEASE_NOTES+=$'\n'"- ${{ vars.SOLUTION_C_UNIQUE_NAME }} v${VERSION}"
+          fi
+          if [[ "${{ inputs.export_config_data }}" == "true" ]]; then
+            RELEASE_FILES+=("config-data.zip")
+            RELEASE_NOTES+=$'\n'"- Config Data"
+          fi
+
+          git tag "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" \
+            --title "Release run-${{ github.run_number }}" \
+            --notes "$RELEASE_NOTES" \
+            "${RELEASE_FILES[@]}"

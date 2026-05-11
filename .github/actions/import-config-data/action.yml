@@ -1,5 +1,5 @@
 name: Import Configuration Migration Data
-description: Downloads the latest config data release artifact and imports it into the target Power Platform environment
+description: Downloads the latest config data from a workflow artifact or GitHub release and imports it into the target Power Platform environment
 
 inputs:
   environment_url:
@@ -17,6 +17,10 @@ inputs:
   gh_token:
     description: GitHub token for reading releases and downloading artifacts
     required: true
+  source:
+    description: 'Where to source the config data: latest-artifact (most recent workflow artifact) or latest-release (most recent GitHub release)'
+    required: false
+    default: latest-artifact
 
 runs:
   using: composite
@@ -31,35 +35,50 @@ runs:
           --tenant "${{ inputs.tenant_id }}" \
           --accept-cleartext-caching
 
-    - name: Resolve latest config data release
-      id: resolve
+    - name: Download config data from latest workflow artifact
+      if: ${{ inputs.source == 'latest-artifact' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+      run: |
+        ARTIFACT=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+          -q '[.artifacts[] | select(.name == "config-data") | select(.expired == false)] | sort_by(.created_at) | last | {id: .id}')
+
+        if [[ -z "$ARTIFACT" || "$(echo "$ARTIFACT" | jq -r '.id')" == "null" ]]; then
+          echo "Warning: no config-data artifact found — skipping import"
+          exit 0
+        fi
+
+        ARTIFACT_ID=$(echo "$ARTIFACT" | jq -r '.id')
+        RUN_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" -q '.workflow_run.id')
+
+        echo "Downloading config-data artifact from run $RUN_ID"
+        gh run download "$RUN_ID" --name "config-data" --dir config-tmp
+        mv config-tmp/config-data/config-data.zip .
+        rm -rf config-tmp
+
+    - name: Download config data from latest release
+      if: ${{ inputs.source == 'latest-release' }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.gh_token }}
       run: |
         LATEST_TAG=$(gh release list --limit 100 --json tagName,createdAt \
-          | jq -r '[.[] | select(.tagName | startswith("config-data/"))] | sort_by(.createdAt) | last | .tagName')
+          | jq -r '[.[] | select(.tagName | startswith("release/run-"))] | sort_by(.createdAt) | last | .tagName')
 
         if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
-          echo "Warning: no config-data release found — skipping data import"
-          echo "tag=" >> $GITHUB_OUTPUT
-        else
-          echo "Resolved latest config data release: $LATEST_TAG"
-          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Warning: no release found — skipping config data import"
+          exit 0
         fi
 
-    - name: Download config data artifact
-      if: ${{ steps.resolve.outputs.tag != '' }}
-      shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.gh_token }}
-      run: |
-        gh release download "${{ steps.resolve.outputs.tag }}" \
-          --pattern "config-data.zip" \
-          --dir .
+        echo "Downloading config-data.zip from release $LATEST_TAG"
+        gh release download "$LATEST_TAG" --pattern "config-data.zip" --dir .
 
     - name: Import configuration data
-      if: ${{ steps.resolve.outputs.tag != '' }}
       shell: bash
       run: |
-        pac data import --data config-data.zip
+        if [[ -f "config-data.zip" ]]; then
+          pac data import --data config-data.zip
+        else
+          echo "No config-data.zip present — skipping import"
+        fi

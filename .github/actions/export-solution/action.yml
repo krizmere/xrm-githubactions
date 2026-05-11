@@ -153,4 +153,4 @@ runs:
       with:
         name: ${{ inputs.solution_unique_name }}_managed_${{ steps.version.outputs.solution_version }}
         path: solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_managed_${{ steps.version.outputs.solution_version }}.zip
-        retention-days: 90
+        retention-days: 30

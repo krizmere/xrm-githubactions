@@ -13,6 +13,14 @@ on:
           - developer-dm
           - developer-preprod
           - developer-prod
+      deploy_source:
+        description: 'Source for deployment artifacts (latest-artifact = most recent workflow artifact, latest-release = most recent GitHub release)'
+        type: choice
+        required: true
+        options:
+          - latest-artifact
+          - latest-release
+        default: latest-artifact
       deploy_solution_a:
         description: Deploy MoJ Shared Base
         type: boolean
@@ -72,6 +80,7 @@ jobs:
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
           settings_file: config/deployment-settings/${{ inputs.environment }}/solution_a.json
+          source: ${{ inputs.deploy_source }}
 
       - name: Deploy MoJ Shared Automation
         if: ${{ inputs.deploy_solution_b }}
@@ -84,6 +93,7 @@ jobs:
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
           settings_file: config/deployment-settings/${{ inputs.environment }}/solution_b.json
+          source: ${{ inputs.deploy_source }}
 
       - name: Deploy LADMS Apps
         if: ${{ inputs.deploy_solution_c }}
@@ -96,6 +106,7 @@ jobs:
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
           settings_file: config/deployment-settings/${{ inputs.environment }}/solution_c.json
+          source: ${{ inputs.deploy_source }}
 
       - name: Import configuration data
         if: ${{ inputs.import_config_data }}
@@ -106,3 +117,4 @@ jobs:
           client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           gh_token: ${{ github.token }}
+          source: ${{ inputs.deploy_source }}

@@ -1,5 +1,5 @@
 name: Deploy Power Platform Solution
-description: Resolves the latest release for a solution, downloads the artifact, and imports it into a Power Platform environment
+description: Downloads a solution artifact from the latest workflow artifact or latest release, then imports it into a Power Platform environment
 
 inputs:
   solution_unique_name:
@@ -23,38 +23,56 @@ inputs:
   settings_file:
     description: Path to the deployment settings JSON file for connection references and environment variables
     required: false
+  source:
+    description: 'Where to source the solution: latest-artifact (most recent workflow artifact) or latest-release (most recent GitHub release)'
+    required: false
+    default: latest-artifact
 
 runs:
   using: composite
   steps:
-    - name: Resolve latest release version
-      id: resolve
+    - name: Download solution from latest workflow artifact
+      if: ${{ inputs.source == 'latest-artifact' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+      run: |
+        ARTIFACT=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+          -q '[.artifacts[] | select(.name | startswith("${{ inputs.solution_unique_name }}_managed_")) | select(.expired == false)] | sort_by(.created_at) | last | {id: .id, name: .name}')
+
+        if [[ -z "$ARTIFACT" || "$(echo "$ARTIFACT" | jq -r '.id')" == "null" ]]; then
+          echo "Error: no artifact found for solution ${{ inputs.solution_unique_name }}"
+          exit 1
+        fi
+
+        ARTIFACT_ID=$(echo "$ARTIFACT" | jq -r '.id')
+        ARTIFACT_NAME=$(echo "$ARTIFACT" | jq -r '.name')
+        RUN_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" -q '.workflow_run.id')
+
+        echo "Downloading $ARTIFACT_NAME from run $RUN_ID"
+        mkdir -p deploy
+        gh run download "$RUN_ID" --name "$ARTIFACT_NAME" --dir deploy-tmp
+        mv deploy-tmp/"$ARTIFACT_NAME"/*.zip deploy/
+        rm -rf deploy-tmp
+
+    - name: Download solution from latest release
+      if: ${{ inputs.source == 'latest-release' }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.gh_token }}
       run: |
         LATEST_TAG=$(gh release list --limit 100 --json tagName,createdAt \
-          | jq -r --arg prefix "${{ inputs.solution_unique_name }}/" \
-            '[.[] | select(.tagName | startswith($prefix))] | sort_by(.createdAt) | last | .tagName')
+          | jq -r '[.[] | select(.tagName | startswith("release/run-"))] | sort_by(.createdAt) | last | .tagName')
 
         if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
-          echo "Error: no release found for solution ${{ inputs.solution_unique_name }}"
+          echo "Error: no release found with prefix release/run-"
           exit 1
         fi
 
-        VERSION="${LATEST_TAG#*/v}"
-        echo "Resolved latest release: $LATEST_TAG (version $VERSION)"
-        echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-    - name: Download solution artifact from GitHub Releases
-      shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.gh_token }}
-      run: |
+        echo "Downloading ${{ inputs.solution_unique_name }} from release $LATEST_TAG"
         mkdir -p deploy
-        gh release download "${{ steps.resolve.outputs.tag }}" \
-          --pattern "${{ inputs.solution_unique_name }}_managed_${{ steps.resolve.outputs.version }}.zip" \
+        gh release download "$LATEST_TAG" \
+          --pattern "${{ inputs.solution_unique_name }}_managed_*.zip" \
           --dir deploy
 
     - name: Authenticate with Power Platform
@@ -70,12 +88,13 @@ runs:
     - name: Import solution
       shell: bash
       run: |
+        ZIP_PATH=$(ls deploy/${{ inputs.solution_unique_name }}_managed_*.zip | head -1)
         SETTINGS_ARG=""
         if [[ -n "${{ inputs.settings_file }}" && -f "${{ inputs.settings_file }}" ]]; then
           SETTINGS_ARG="--settings-file ${{ inputs.settings_file }}"
         fi
         pac solution import \
-          --path "deploy/${{ inputs.solution_unique_name }}_managed_${{ steps.resolve.outputs.version }}.zip" \
+          --path "$ZIP_PATH" \
           --activate-plugins true \
           --force-overwrite true \
           $SETTINGS_ARG
