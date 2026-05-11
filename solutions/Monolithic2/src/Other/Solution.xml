@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ImportExportXml version="9.2.26035.200" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26035.200" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26035.00200">
+<ImportExportXml version="9.2.26035.200" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26035.200" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26041.00179">
   <SolutionManifest>
     <UniqueName>Monolithic2</UniqueName>
     <LocalizedNames>
       <LocalizedName description="Monolithic2" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.3</Version>
+    <Version>1.0.0.6</Version>
     <Managed>1</Managed>
     <Publisher>
       <UniqueName>KasmaraConsulting</UniqueName>
@@ -88,7 +88,19 @@
       </MissingDependency>
       <MissingDependency>
         <Required type="1" schemaName="kc_transaction" displayName="Transaction" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="kc_transaction" displayName="Transaction" solution="Active" />
         <Dependent type="80" schemaName="kc_App00" displayName="App00" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="10" schemaName="kc_BankAccount_kc_Customer" displayName="kc_BankAccount_kc_Customer" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="10" schemaName="kc_Transaction_kc_BankAccount" displayName="kc_Transaction_kc_BankAccount" parentSchemaName="kc_transaction" parentDisplayName="Transaction" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
       </MissingDependency>
       <MissingDependency>
         <Required type="2" schemaName="createdon" displayName="Created On" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
@@ -99,8 +111,16 @@
         <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
       </MissingDependency>
       <MissingDependency>
+        <Required type="2" schemaName="kc_accountname" displayName="Account Name" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
+      </MissingDependency>
+      <MissingDependency>
         <Required type="2" schemaName="kc_accountnumber" displayName="Account Number" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
         <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_accountnumber" displayName="Account Number" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
       </MissingDependency>
       <MissingDependency>
         <Required type="2" schemaName="kc_bankaccountid" displayName="BankAccount" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
@@ -111,8 +131,32 @@
         <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
       </MissingDependency>
       <MissingDependency>
+        <Required type="2" schemaName="kc_branch" displayName="Branch" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
+      </MissingDependency>
+      <MissingDependency>
         <Required type="2" schemaName="kc_bsb" displayName="BSB" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
         <Dependent type="26" schemaName="BankAccountView00" displayName="BankAccountView00" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" id="{79e63c3e-9248-f111-bec6-002248e438e6}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_bsb" displayName="BSB" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_collision" displayName="Collision" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="kc_customerid" displayName="Customer" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="2" schemaName="ownerid" displayName="Owner" parentSchemaName="kc_bankaccount" parentDisplayName="BankAccount" solution="Active" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="26" schemaName="Active Transactions" displayName="Active Transactions" parentSchemaName="kc_transaction" parentDisplayName="Transaction" solution="Active" id="{9a85de77-df5b-4fa0-9acc-aaa860db25b6}" />
+        <Dependent type="60" displayName="Information" parentDisplayName="BankAccount" id="{92a2794c-afc0-4ced-b14a-5e0b58fb5aec}" />
       </MissingDependency>
       <MissingDependency>
         <Required type="61" schemaName="msdyn_/Images/AppModule_Default_Icon.png" displayName="msdyn_/Images/AppModule_Default_Icon.png" solution="AppModuleWebResources (2.5)">
