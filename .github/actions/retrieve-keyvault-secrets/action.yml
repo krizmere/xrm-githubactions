@@ -14,15 +14,12 @@ runs:
   steps:
     - name: Retrieve secrets from Key Vault
       shell: bash
-      env:
-        SECRET_NAMES_INPUT: ${{ inputs.secret_names }}
-        KEYVAULT_NAME: ${{ inputs.keyvault_name }}
       run: |
-        IFS=',' read -ra SECRET_NAMES <<< "$SECRET_NAMES_INPUT"
+        IFS=',' read -ra SECRET_NAMES <<< "${{ inputs.secret_names }}"
         for SECRET_NAME in "${SECRET_NAMES[@]}"; do
-          SECRET_VALUE=$(az keyvault secret show --name "$SECRET_NAME" --vault-name "$KEYVAULT_NAME" --query value -o tsv)
+          SECRET_VALUE=$(az keyvault secret show --name "$SECRET_NAME" --vault-name "${{ inputs.keyvault_name }}" --query value -o tsv)
           if [[ -z "$SECRET_VALUE" ]]; then
-            echo "ERROR: Secret '$SECRET_NAME' returned empty from Key Vault '$KEYVAULT_NAME'."
+            echo "ERROR: Secret '$SECRET_NAME' returned empty from Key Vault."
             exit 1
           fi
           echo "::add-mask::$SECRET_VALUE"
