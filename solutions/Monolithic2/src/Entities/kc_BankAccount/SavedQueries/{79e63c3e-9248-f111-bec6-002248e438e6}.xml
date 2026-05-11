@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>0</isdefault>
+    <savedqueryid>{79e63c3e-9248-f111-bec6-002248e438e6}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="kc_accountname" select="1" icon="1" preview="1">
+        <row name="result" id="kc_bankaccountid">
+          <cell name="kc_accountname" width="200" />
+          <cell name="kc_accountnumber" width="200" />
+          <cell name="kc_bsb" width="200" />
+          <cell name="kc_branch" width="200" />
+          <cell name="createdon" width="200" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" output-format="xml-platform" mapping="logical">
+        <entity name="kc_bankaccount">&lt;attribute name="kc_accountname" /&gt;&lt;attribute name="kc_accountnumber" /&gt;&lt;attribute name="kc_bsb" /&gt;&lt;attribute name="kc_branch" /&gt;&lt;attribute name="createdon" /&gt;<attribute name="kc_accountname" /><attribute name="kc_accountnumber" /><attribute name="kc_bsb" /><attribute name="kc_branch" /><attribute name="createdon" /><attribute name="kc_bankaccountid" /></entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0.0.2</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="BankAccountView00" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>
