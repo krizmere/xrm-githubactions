@@ -62,10 +62,10 @@ runs:
         GH_TOKEN: ${{ inputs.gh_token }}
       run: |
         LATEST_TAG=$(gh release list --limit 100 --json tagName,createdAt \
-          | jq -r '[.[] | select(.tagName | startswith("release/run-"))] | sort_by(.createdAt) | last | .tagName')
+          | jq -r '[.[] | select(.tagName | startswith("release/"))] | sort_by(.createdAt) | last | .tagName')
 
         if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
-          echo "Error: no release found with prefix release/run-"
+          echo "Error: no release found with prefix release/"
           exit 1
         fi
 

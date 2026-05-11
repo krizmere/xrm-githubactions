@@ -38,7 +38,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="release/run-${{ github.run_number }}"
+          DATE=$(date +%Y-%m-%d)
+          TAG="release/${DATE}-run-${{ github.run_number }}"
           RELEASE_FILES=()
           RELEASE_NOTES="Release from the latest main branch."$'\n\n'"**Solutions:**"
 
@@ -55,6 +56,6 @@ jobs:
           git tag "$TAG"
           git push origin "$TAG"
           gh release create "$TAG" \
-            --title "Release run-${{ github.run_number }}" \
+            --title "Release ${DATE} (run ${{ github.run_number }})" \
             --notes "$RELEASE_NOTES" \
             "${RELEASE_FILES[@]}"

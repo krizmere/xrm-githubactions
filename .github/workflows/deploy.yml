@@ -14,7 +14,7 @@ on:
           - developer-preprod
           - developer-prod
       deploy_source:
-        description: 'Source for deployment artifacts (latest-artifact = most recent workflow artifact, latest-release = most recent GitHub release)'
+        description: 'Source of deployment artifacts'
         type: choice
         required: true
         options:

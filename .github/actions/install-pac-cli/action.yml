@@ -1,5 +1,5 @@
 name: Install Power Platform CLI
-description: Installs PAC CLI via Windows MSI and adds it to PATH
+description: Installs PAC CLI via Windows MSI and adds it to PATH. MSI installer is used to ensure pac data command is available.
 
 runs:
   using: composite
