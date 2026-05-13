@@ -27,6 +27,30 @@
                         <control id="kc_accountname" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="kc_accountname" />
                       </cell>
                     </row>
+                    <row>
+                      <cell id="{2a5d9f66-8551-4354-a82e-56bbf960a24d}" locklevel="0" colspan="1" rowspan="1">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="kc_collision" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="kc_collision" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{b1644213-d627-41ca-9857-37cc22e211e2}" locklevel="0" colspan="1" rowspan="1">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="kc_bsb" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="kc_bsb" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{4037f9d0-4a53-4a4d-b711-be5fbb446e6e}" locklevel="0" colspan="1" rowspan="1">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="kc_branch" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="kc_branch" disabled="false" />
+                      </cell>
+                    </row>
                   </rows>
                 </section>
                 <section name="null_section_3" id="6f8171a9-184c-4c01-b999-fadb87c645db" IsUserDefined="0" locklevel="0" showlabel="true" showbar="false" layout="varwidth" celllabelalignment="Left" celllabelposition="Left" columns="1" labelwidth="115">
