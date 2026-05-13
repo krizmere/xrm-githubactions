@@ -147,8 +147,3 @@ runs:
     - name: Remove raw export zip
       shell: bash
       run: rm "solutions/${{ inputs.solution_unique_name }}/${{ inputs.solution_unique_name }}_export.zip"
-
-    - name: Remove managed solution zip
-      shell: bash
-      run: |
-        find "solutions/${{ inputs.solution_unique_name }}" -maxdepth 1 -name "*_managed_*.zip" -delete

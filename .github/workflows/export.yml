@@ -107,36 +107,18 @@ jobs:
           client_secret: ${{ env.PP_APP_SECRET }}
           tenant_id: ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: Create branch, commit, and open pull request
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          BRANCH="export/run-${{ github.run_number }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Run solution checker
+        id: checker
+        uses: ./.github/actions/run-solution-checker
+        with:
+          solution_a: ${{ inputs.export_solution_a == true && vars.SOLUTION_A_UNIQUE_NAME || '' }}
+          solution_b: ${{ inputs.export_solution_b == true && vars.SOLUTION_B_UNIQUE_NAME || '' }}
+          solution_c: ${{ inputs.export_solution_c == true && vars.SOLUTION_C_UNIQUE_NAME || '' }}
+          checker_geo: ${{ vars.SOLUTION_CHECKER_GEO || 'NewZealand' }}
 
-          # -B resets the branch to the current HEAD if it already exists (safe re-run behaviour)
-          git checkout -B "$BRANCH"
-          git add solutions/ data/config/
-
-          if git diff --staged --quiet; then
-            echo "No changes detected — skipping pull request creation"
-            exit 0
-          fi
-
-          git commit -m "chore: export Power Platform solutions [run ${{ github.run_number }}]"
-
-          # --force-with-lease is safe for this bot branch and handles re-runs where the branch was already pushed
-          git push --force-with-lease origin "$BRANCH"
-
-          # Avoid duplicate PRs when re-running a failed job
-          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null)
-          if [[ -n "$EXISTING_PR" ]]; then
-            echo "Pull request #${EXISTING_PR} already exists for this branch — skipping creation"
-          else
-            gh pr create \
-              --title "chore: export Power Platform solutions (run ${{ github.run_number }})" \
-              --body "Automated export from Power Platform DEV environment. Review and merge to trigger the artifact build." \
-              --base main \
-              --head "$BRANCH"
-          fi
+      - name: Create branch and open pull request
+        uses: ./.github/actions/create-export-pr
+        with:
+          run_number: ${{ github.run_number }}
+          checker_summary: ${{ steps.checker.outputs.checker_summary }}
+          gh_token: ${{ github.token }}

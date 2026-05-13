@@ -1,0 +1,57 @@
+name: Create Export Pull Request
+description: Commits exported solution source to a branch and opens a pull request
+
+inputs:
+  run_number:
+    description: GitHub Actions run number used for the branch name and PR title
+    required: true
+  checker_summary:
+    description: Markdown summary from the solution checker to include in the PR body
+    required: false
+    default: ''
+  gh_token:
+    description: GitHub token with contents and pull-requests write permissions
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Commit, push, and open pull request
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+        CHECKER_SUMMARY: ${{ inputs.checker_summary }}
+      run: |
+        BRANCH="export/run-${{ inputs.run_number }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # -B resets the branch to the current HEAD if it already exists (safe re-run behaviour)
+        git checkout -B "$BRANCH"
+
+        # Stage only unpacked source and config data — managed zips stay in the workspace for checker but must not be committed
+        git add solutions/*/src data/config/
+
+        if git diff --staged --quiet; then
+          echo "No changes detected — skipping pull request creation"
+          exit 0
+        fi
+
+        git commit -m "chore: export Power Platform solutions [run ${{ inputs.run_number }}]"
+
+        # --force-with-lease is safe for this bot branch and handles re-runs where the branch was already pushed
+        git push --force-with-lease origin "$BRANCH"
+
+        # Avoid duplicate PRs when re-running a failed job
+        EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null)
+        if [[ -n "$EXISTING_PR" ]]; then
+          echo "Pull request #${EXISTING_PR} already exists for this branch — skipping creation"
+        else
+          printf 'Automated export from Power Platform DEV environment. Review and merge to trigger the artifact build.\n\n%s\n' \
+            "$CHECKER_SUMMARY" > /tmp/pr-body.md
+          gh pr create \
+            --title "chore: export Power Platform solutions (run ${{ inputs.run_number }})" \
+            --body-file /tmp/pr-body.md \
+            --base main \
+            --head "$BRANCH"
+        fi

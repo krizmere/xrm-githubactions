@@ -1,0 +1,93 @@
+name: Run Solution Checker
+description: Runs the Power Platform solution checker against managed solution ZIPs and outputs a markdown summary
+
+inputs:
+  solution_a:
+    description: Unique name of the first solution to check (leave empty to skip)
+    required: false
+    default: ''
+  solution_b:
+    description: Unique name of the second solution to check (leave empty to skip)
+    required: false
+    default: ''
+  solution_c:
+    description: Unique name of the third solution to check (leave empty to skip)
+    required: false
+    default: ''
+  checker_geo:
+    description: Geographic region for the solution checker API
+    required: false
+    default: NewZealand
+
+outputs:
+  checker_summary:
+    description: Markdown table summarising solution checker results
+    value: ${{ steps.check.outputs.checker_summary }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check solutions
+      id: check
+      shell: bash
+      env:
+        CHECKER_GEO: ${{ inputs.checker_geo }}
+        SOLUTION_A: ${{ inputs.solution_a }}
+        SOLUTION_B: ${{ inputs.solution_b }}
+        SOLUTION_C: ${{ inputs.solution_c }}
+      run: |
+        SUMMARY_ROWS=""
+
+        check_solution() {
+          local SOLUTION_NAME="$1"
+          local ZIP
+          ZIP=$(find "solutions/${SOLUTION_NAME}" -maxdepth 1 -name "*_managed_*.zip" -type f | head -1)
+
+          if [[ -z "$ZIP" ]]; then
+            echo "No managed zip found for ${SOLUTION_NAME} — skipping checker"
+            return
+          fi
+
+          echo "Running solution checker on ${SOLUTION_NAME} (${ZIP})"
+          mkdir -p "checker-results/${SOLUTION_NAME}"
+
+          pac solution check \
+            --path "$ZIP" \
+            --geo "$CHECKER_GEO" \
+            --outputDirectory "checker-results/${SOLUTION_NAME}" \
+            --saveResults || true
+
+          local SARIF
+          SARIF=$(find "checker-results/${SOLUTION_NAME}" -name "*.sarif" -type f | head -1)
+
+          if [[ -z "$SARIF" ]]; then
+            echo "WARNING: no SARIF output produced for ${SOLUTION_NAME}"
+            SUMMARY_ROWS+=$'\n'"| ${SOLUTION_NAME} | ⚠️ no results | — | — |"
+            return
+          fi
+
+          local CRITICAL HIGH LOW
+          CRITICAL=$(jq '[.runs[].results[] | select(.level == "error")]   | length' "$SARIF")
+          HIGH=$(jq     '[.runs[].results[] | select(.level == "warning")] | length' "$SARIF")
+          LOW=$(jq      '[.runs[].results[] | select(.level == "note")]    | length' "$SARIF")
+
+          local STATUS="✅"
+          [[ "$CRITICAL" -gt 0 ]] && STATUS="❌"
+
+          SUMMARY_ROWS+=$'\n'"| ${STATUS} ${SOLUTION_NAME} | ${CRITICAL} | ${HIGH} | ${LOW} |"
+          echo "${STATUS} ${SOLUTION_NAME} — critical: ${CRITICAL}, high: ${HIGH}, low: ${LOW}"
+        }
+
+        for SOLUTION in "$SOLUTION_A" "$SOLUTION_B" "$SOLUTION_C"; do
+          [[ -n "$SOLUTION" ]] && check_solution "$SOLUTION"
+        done
+
+        {
+          echo "checker_summary<<CHECKER_EOF"
+          echo "### Solution Checker Results"
+          echo ""
+          echo "| Solution | Critical | High | Low |"
+          echo "|---|---|---|---|"
+          echo "$SUMMARY_ROWS"
+          echo "CHECKER_EOF"
+        } >> "$GITHUB_OUTPUT"
