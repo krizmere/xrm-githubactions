@@ -18,9 +18,9 @@ inputs:
     description: Azure AD tenant ID for authentication
     required: true
   version_bump:
-    description: 'Version bump type: none (export only), build, patch, minor, or major'
+    description: 'Version bump type: none (export only), revision, build, minor, or major'
     required: false
-    default: none (export only)
+    default: none
 
 outputs:
   solution_version:
@@ -99,16 +99,17 @@ runs:
         IFS='.' read -ra V <<< "$CURRENT_VERSION"
         MAJOR=${V[0]:-1}; MINOR=${V[1]:-0}; BUILD=${V[2]:-0}; REVISION=${V[3]:-0}
 
+        BUMP=true
         case "${{ inputs.version_bump }}" in
           major)    MAJOR=$((MAJOR+1)); MINOR=0; BUILD=0; REVISION=0 ;;
           minor)    MINOR=$((MINOR+1)); BUILD=0; REVISION=0 ;;
           build)    BUILD=$((BUILD+1)); REVISION=0 ;;
           revision) REVISION=$((REVISION+1)) ;;
-          "none (export only)") NEW_VERSION="$CURRENT_VERSION" ;;
-          *)        NEW_VERSION="$CURRENT_VERSION" ;;
+          none|"")  NEW_VERSION="$CURRENT_VERSION"; BUMP=false ;;
+          *)        echo "ERROR: Unknown version_bump value '${{ inputs.version_bump }}'. Expected none, revision, build, minor or major."; exit 1 ;;
         esac
 
-        if [ "${{ inputs.version_bump }}" != "none (export only)" ]; then
+        if [ "$BUMP" = true ]; then
           NEW_VERSION="${MAJOR}.${MINOR}.${BUILD}.${REVISION}"
           # Hard stop: the computed version must be strictly greater than the latest tag
           if ! version_gt "$NEW_VERSION" "$TAG_VERSION"; then
@@ -128,7 +129,7 @@ runs:
         echo "solution_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
     - name: Update solution version in Power Platform environment
-      if: ${{ inputs.version_bump != 'none (export only)' }}
+      if: ${{ inputs.version_bump != 'none' }}
       shell: bash
       run: |
         pac solution online-version \

@@ -11,16 +11,43 @@ runs:
         $result = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/i `"$msiPath`" /quiet /norestart"
         if ($result.ExitCode -ne 0) { Write-Error "MSI install failed (exit code $($result.ExitCode))"; exit 1 }
 
-        $nugetBase = "C:\Users\runneradmin\.nuget\packages\microsoft.powerapps.cli"
-        $timeout = 120; $elapsed = 0; $pacExe = $null
+        # The MSI only installs the launcher (pac.cmd / pac.launcher.exe / nuget.exe).
+        # The CLI itself is downloaded and extracted by the launcher via NuGet, so invoke
+        # it once to drive that download synchronously instead of racing a background task.
+        $launcher = "$env:LOCALAPPDATA\Microsoft\PowerAppsCLI\pac.cmd"
+        if (-not (Test-Path $launcher)) { Write-Error "pac launcher not found at $launcher"; exit 1 }
+        & $launcher help *> $null
+
+        # NuGet writes the package files in arbitrary order and drops .nupkg.metadata last,
+        # so require that marker plus the assemblies pac.exe needs at startup. Selecting on
+        # pac.exe alone can pick a half-extracted folder that is missing bolt.system.dll.
+        $nugetBase = "$env:USERPROFILE\.nuget\packages\microsoft.powerapps.cli"
+        $timeout = 180; $elapsed = 0; $pacExe = $null
         while ($elapsed -lt $timeout) {
           $versionDir = Get-ChildItem $nugetBase -Directory -ErrorAction SilentlyContinue |
-                        Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
-          if ($versionDir) {
-            $candidate = Join-Path $versionDir.FullName "tools\pac.exe"
-            if (Test-Path $candidate) { $pacExe = $candidate; break }
-          }
+                        Where-Object {
+                          (Test-Path (Join-Path $_.FullName '.nupkg.metadata')) -and
+                          (Test-Path (Join-Path $_.FullName 'tools\pac.exe')) -and
+                          (Test-Path (Join-Path $_.FullName 'tools\bolt.system.dll'))
+                        } |
+                        Sort-Object { try { [version]$_.Name } catch { [version]'0.0.0.0' } } -Descending |
+                        Select-Object -First 1
+          if ($versionDir) { $pacExe = Join-Path $versionDir.FullName 'tools\pac.exe'; break }
           Start-Sleep -Seconds 2; $elapsed += 2
         }
-        if (-not $pacExe) { Write-Error "pac.exe not found after ${timeout}s"; exit 1 }
+        if (-not $pacExe) { Write-Error "A complete pac CLI package was not found after ${timeout}s"; exit 1 }
+
+        # Fail here rather than part way through an export. Note that pac 2.x rejects
+        # --version as an argument, so use 'help' to confirm the CLI actually starts.
+        $banner = & $pacExe help 2>&1
+        if ($LASTEXITCODE -ne 0) {
+          $banner | Out-String | Write-Host
+          Write-Error "pac.exe failed to start (exit code $LASTEXITCODE)"; exit 1
+        }
+        $banner | Select-Object -First 2 | Write-Host
+
+        # The MSI is used specifically so that 'pac data' is available; confirm it loaded.
+        & $pacExe data help *> $null
+        if ($LASTEXITCODE -ne 0) { Write-Error "'pac data' is unavailable in $pacExe"; exit 1 }
+
         echo (Split-Path $pacExe -Parent) >> $env:GITHUB_PATH

@@ -15,5 +15,5 @@ jobs:
       - name: Verify
         shell: pwsh
         run: |
-          pac --version
-          pac data
+          pac help
+          pac data help
