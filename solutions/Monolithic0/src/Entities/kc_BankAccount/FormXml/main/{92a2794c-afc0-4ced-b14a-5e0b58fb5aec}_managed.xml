@@ -28,19 +28,19 @@
                       </cell>
                     </row>
                     <row>
+                      <cell id="{d47ac659-828e-4f6d-9e8b-2e04a6053e93}" locklevel="0" colspan="1" rowspan="1">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="kc_bsbnumber" classid="{C6D124CA-7EDA-4A60-AEA9-7FB8D318B68F}" datafieldname="kc_bsbnumber" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
                       <cell id="{2a5d9f66-8551-4354-a82e-56bbf960a24d}" locklevel="0" colspan="1" rowspan="1">
                         <labels>
                           <label description="" languagecode="1033" />
                         </labels>
                         <control id="kc_collision" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="kc_collision" disabled="false" />
-                      </cell>
-                    </row>
-                    <row>
-                      <cell id="{fe58f95b-2ec6-41f9-a148-001689bd1ddb}" locklevel="0" colspan="1" rowspan="1">
-                        <labels>
-                          <label description="" languagecode="1033" />
-                        </labels>
-                        <control id="kc_bsb" classid="{C6D124CA-7EDA-4A60-AEA9-7FB8D318B68F}" datafieldname="kc_bsb" disabled="false" />
                       </cell>
                     </row>
                     <row>

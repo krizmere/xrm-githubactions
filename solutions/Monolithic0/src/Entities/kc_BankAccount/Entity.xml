@@ -328,10 +328,10 @@
             <Description description="" languagecode="1033" />
           </Descriptions>
         </attribute>
-        <attribute PhysicalName="kc_BSB">
+        <attribute PhysicalName="kc_BSBNumber">
           <Type>int</Type>
-          <Name>kc_bsb</Name>
-          <LogicalName>kc_bsb</LogicalName>
+          <Name>kc_bsbnumber</Name>
+          <LogicalName>kc_bsbnumber</LogicalName>
           <RequiredLevel>none</RequiredLevel>
           <DisplayMask>ValidForAdvancedFind|ValidForForm|ValidForGrid</DisplayMask>
           <ImeMode>disabled</ImeMode>
@@ -362,7 +362,7 @@
           <MinValue>-2147483648</MinValue>
           <MaxValue>2147483647</MaxValue>
           <displaynames>
-            <displayname description="BSB" languagecode="1033" />
+            <displayname description="BSB Number" languagecode="1033" />
           </displaynames>
           <Descriptions>
             <Description description="" languagecode="1033" />
