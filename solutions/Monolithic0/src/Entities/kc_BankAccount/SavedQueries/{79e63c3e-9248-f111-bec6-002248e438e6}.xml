@@ -12,7 +12,7 @@
         <row name="result" id="kc_bankaccountid">
           <cell name="kc_accountname" width="200" />
           <cell name="kc_accountnumber" width="200" />
-          <cell name="kc_bsb" width="200" />
+          <cell name="kc_bsb" width="100" />
           <cell name="kc_branch" width="200" />
           <cell name="createdon" width="200" />
         </row>
@@ -21,7 +21,7 @@
     <querytype>0</querytype>
     <fetchxml>
       <fetch version="1.0" output-format="xml-platform" mapping="logical">
-        <entity name="kc_bankaccount">&lt;attribute name="kc_accountname" /&gt;&lt;attribute name="kc_accountnumber" /&gt;&lt;attribute name="kc_bsb" /&gt;&lt;attribute name="kc_branch" /&gt;&lt;attribute name="createdon" /&gt;<attribute name="kc_accountname" /><attribute name="kc_accountnumber" /><attribute name="kc_bsb" /><attribute name="kc_branch" /><attribute name="createdon" /><attribute name="kc_bankaccountid" /></entity>
+        <entity name="kc_bankaccount">&lt;attribute name="kc_accountname" /&gt;&lt;attribute name="kc_accountnumber" /&gt;&lt;attribute name="kc_bsb" /&gt;&lt;attribute name="kc_branch" /&gt;&lt;attribute name="createdon" /&gt;<attribute name="kc_accountname" /><attribute name="kc_accountnumber" /><attribute name="kc_branch" /><attribute name="createdon" /><attribute name="kc_bankaccountid" /><attribute name="kc_bsb" /></entity>
       </fetch>
     </fetchxml>
     <IntroducedVersion>1.0.0.2</IntroducedVersion>
